@@ -16,11 +16,11 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon.ico?v=3", sizes: "32x32" },
-      { url: "/icons/cocare-icon.svg?v=3", type: "image/svg+xml" },
-      { url: "/icons/cocare-icon-192.png?v=3", sizes: "192x192", type: "image/png" },
+      { url: "/favicon.ico?v=4", sizes: "32x32" },
+      { url: "/icons/cocare-icon.svg?v=4", type: "image/svg+xml" },
+      { url: "/icons/cocare-icon-192.png?v=4", sizes: "192x192", type: "image/png" },
     ],
-    apple: "/icons/cocare-icon-192.png?v=3",
+    apple: "/icons/cocare-icon-192.png?v=4",
   },
 };
 

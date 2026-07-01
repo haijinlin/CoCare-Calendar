@@ -1,22 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="CoCare">
   <defs>
-    <linearGradient id="bg" x1="96" y1="56" x2="416" y2="456" gradientUnits="userSpaceOnUse">
+    <linearGradient id="bg" x1="96" y1="64" x2="416" y2="448" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#2563eb"/>
+      <stop offset=".58" stop-color="#1d4ed8"/>
       <stop offset="1" stop-color="#0f172a"/>
     </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#020617" flood-opacity=".24"/>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#020617" flood-opacity=".22"/>
     </filter>
   </defs>
   <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  <g filter="url(#shadow)">
-    <rect x="104" y="118" width="304" height="292" rx="44" fill="#fff"/>
-    <path d="M104 164c0-25 20-46 46-46h212c25 0 46 21 46 46v48H104v-48Z" fill="#dbeafe"/>
-    <rect x="160" y="86" width="30" height="86" rx="15" fill="#bfdbfe"/>
-    <rect x="322" y="86" width="30" height="86" rx="15" fill="#bfdbfe"/>
-    <circle cx="184" cy="268" r="26" fill="#2563eb"/>
-    <circle cx="256" cy="268" r="26" fill="#f59e0b"/>
-    <circle cx="328" cy="268" r="26" fill="#e11d48"/>
-    <path d="M256 366c-7 0-14-3-19-8l-38-38c-15-15-15-38 0-52 14-14 36-15 51-3l6 5 6-5c15-12 37-11 51 3 15 14 15 37 0 52l-38 38c-5 5-12 8-19 8Z" fill="#0f172a"/>
-  </g>
+  <path
+    d="M285 386c-77 0-134-55-134-130s57-130 134-130c45 0 82 18 106 50l-52 43c-13-18-31-28-54-28-36 0-62 27-62 65s26 65 62 65c23 0 41-10 54-28l52 43c-24 32-61 50-106 50Z"
+    fill="#fff"
+    filter="url(#softShadow)"
+  />
+  <circle cx="358" cy="330" r="34" fill="#f59e0b"/>
+  <circle cx="358" cy="330" r="16" fill="#fff" opacity=".92"/>
 </svg>
