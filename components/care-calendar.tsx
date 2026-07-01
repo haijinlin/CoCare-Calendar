@@ -209,6 +209,7 @@ export function CareCalendar({
             .toSorted((a, b) => blockScore(b) - blockScore(a))[0];
           const calendarMarker = pendingRequest ?? acceptedRequest;
           const display = buildDisplay(displayBlock, acceptedRequest, dayStart, nextDayStart);
+          const isTodayDate = dayKey === format(new Date(), "yyyy-MM-dd");
           const dayStyle = display
             ? display.isPickupDay
               ? pickupStyle
@@ -224,6 +225,7 @@ export function CareCalendar({
                 "relative flex flex-col border-b border-r p-1.5 last:border-r-0 sm:p-2",
                 view === "week" ? "min-h-56 sm:min-h-72" : "min-h-32 sm:min-h-36",
                 dayStyle,
+                isTodayDate && "ring-2 ring-amber-400 ring-inset",
                 selectedDayKey === dayKey && "ring-2 ring-slate-950 ring-inset",
                 !isCurrentMonth(day) && "opacity-45",
               )}
@@ -233,6 +235,7 @@ export function CareCalendar({
                   href={`/?${baseQuery}&day=${dayKey}&date=${dayKey}`}
                   className={clsx(
                     "flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold hover:bg-white/70",
+                    isTodayDate && "bg-amber-300 text-slate-950 shadow-sm",
                     format(day, "yyyy-MM") === format(monthStart, "yyyy-MM") ? "" : "text-slate-400",
                   )}
                   title="View day details"
@@ -241,7 +244,7 @@ export function CareCalendar({
                 </a>
               </div>
 
-              <div className="min-h-0 flex-1 pb-2">
+              <div className="min-h-0 flex-1 pb-8">
                 {display ? (
                   <div>
                     <div className="text-[11px] font-medium leading-4 opacity-85 sm:text-xs sm:leading-5">
@@ -253,8 +256,8 @@ export function CareCalendar({
                 )}
               </div>
 
-              <div className="mt-auto flex min-h-7 items-center justify-between gap-1">
-                <div className="flex min-w-0 flex-wrap items-center gap-1">
+              <div className="absolute inset-x-1.5 bottom-1.5 flex min-h-7 items-end justify-between gap-1 sm:inset-x-2 sm:bottom-2">
+                <div className="min-w-0 max-w-[calc(100%-2.25rem)]">
                   {calendarMarker ? (
                     <a
                       href="#change-requests"
@@ -263,7 +266,7 @@ export function CareCalendar({
                         `${calendarMarker.status.toLowerCase()} change request`
                       }
                       className={clsx(
-                        "inline-flex h-6 max-w-20 items-center rounded-full px-2 text-[10px] font-semibold shadow-sm ring-1 ring-black/5 sm:max-w-24 sm:text-[11px]",
+                        "inline-flex h-6 max-w-full items-center rounded-full px-2 text-[10px] font-semibold shadow-sm ring-1 ring-black/5 sm:text-[11px]",
                         calendarMarker.status === "PENDING"
                           ? "bg-white text-slate-900"
                           : "bg-slate-900 text-white",
@@ -278,11 +281,11 @@ export function CareCalendar({
                     <a
                       href={
                         manualBlocksForDay.length === 1
-                          ? `/?month=${format(monthStart, "yyyy-MM")}&edit=${manualBlocksForDay[0].id}#care-block-form`
+                          ? `/?month=${format(monthStart, "yyyy-MM")}&edit=${manualBlocksForDay[0].id}#care-block-panel`
                           : `/?${baseQuery}&day=${dayKey}#day-details`
                       }
                       title={careMarkerTitle(manualBlocksForDay)}
-                      className="inline-flex h-6 max-w-20 items-center rounded-full bg-white px-2 text-[10px] font-semibold text-slate-900 shadow-sm ring-1 ring-black/5 sm:max-w-24 sm:text-[11px]"
+                      className="inline-flex h-6 max-w-full items-center rounded-full bg-white px-2 text-[10px] font-semibold text-slate-900 shadow-sm ring-1 ring-black/5 sm:text-[11px]"
                     >
                       <span className="truncate">
                         Care{manualBlocksForDay.length > 1 ? ` ${manualBlocksForDay.length}` : ""}
@@ -291,7 +294,7 @@ export function CareCalendar({
                   ) : null}
                 </div>
                 <a
-                  href={`/?${baseQuery}&day=${dayKey}&date=${dayKey}#care-block-form`}
+                  href={`/?${baseQuery}&day=${dayKey}&date=${dayKey}#care-block-panel`}
                   className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/80 text-slate-700 shadow-sm ring-1 ring-black/5 hover:bg-white"
                   title="Add care block"
                 >

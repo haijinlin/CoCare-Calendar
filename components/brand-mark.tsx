@@ -8,13 +8,17 @@ type BrandMarkProps = {
 export function BrandMark({ compact = false, href = "/" }: BrandMarkProps) {
   const content = (
     <>
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-slate-950 text-white shadow-sm">
-        <CalendarDays className="h-5 w-5" />
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-blue-200 bg-blue-50 text-blue-700 shadow-sm sm:h-10 sm:w-10">
+        <CalendarDays className="h-4 w-4 sm:h-5 sm:w-5" />
       </div>
       <div className="min-w-0">
-        <div className="text-lg font-semibold leading-tight text-slate-950">CoCare</div>
+        <div className="text-base font-semibold leading-tight text-slate-950 sm:text-lg">
+          CoCare
+        </div>
         {!compact ? (
-          <div className="text-xs leading-tight text-slate-500">Derick's care calendar</div>
+          <div className="hidden text-xs leading-tight text-slate-500 sm:block">
+            Derick's care calendar
+          </div>
         ) : null}
       </div>
     </>
@@ -23,7 +27,7 @@ export function BrandMark({ compact = false, href = "/" }: BrandMarkProps) {
   return (
     <a
       href={href}
-      className="flex items-center gap-3 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+      className="flex items-center gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-slate-400 sm:gap-3"
       aria-label="Go to CoCare calendar"
     >
       {content}
