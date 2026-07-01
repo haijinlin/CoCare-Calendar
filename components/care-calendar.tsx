@@ -230,11 +230,16 @@ export function CareCalendar({
                 !isCurrentMonth(day) && "opacity-45",
               )}
             >
+              <a
+                href={`/?${baseQuery}&day=${dayKey}&date=${dayKey}#day-details`}
+                className="absolute inset-0 z-0 sm:hidden"
+                aria-label={`View details for ${format(day, "d MMM yyyy")}`}
+              />
               <div className="mb-2 flex items-center justify-between">
                 <a
-                  href={`/?${baseQuery}&day=${dayKey}&date=${dayKey}`}
+                  href={`/?${baseQuery}&day=${dayKey}&date=${dayKey}#day-details`}
                   className={clsx(
-                    "flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold hover:bg-white/70",
+                    "relative z-10 flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold hover:bg-white/70",
                     isTodayDate && "bg-amber-300 text-slate-950 shadow-sm",
                     format(day, "yyyy-MM") === format(monthStart, "yyyy-MM") ? "" : "text-slate-400",
                   )}
@@ -266,7 +271,7 @@ export function CareCalendar({
                         `${calendarMarker.status.toLowerCase()} change request`
                       }
                       className={clsx(
-                        "inline-flex h-6 max-w-full items-center rounded-full px-2 text-[10px] font-semibold shadow-sm ring-1 ring-black/5 sm:text-[11px]",
+                        "relative z-10 inline-flex h-6 max-w-full items-center rounded-full px-2 text-[10px] font-semibold shadow-sm ring-1 ring-black/5 sm:text-[11px]",
                         calendarMarker.status === "PENDING"
                           ? "bg-white text-slate-900"
                           : "bg-slate-900 text-white",
@@ -285,7 +290,7 @@ export function CareCalendar({
                           : `/?${baseQuery}&day=${dayKey}#day-details`
                       }
                       title={careMarkerTitle(manualBlocksForDay)}
-                      className="inline-flex h-6 max-w-full items-center rounded-full bg-white px-2 text-[10px] font-semibold text-slate-900 shadow-sm ring-1 ring-black/5 sm:text-[11px]"
+                      className="relative z-10 inline-flex h-6 max-w-full items-center rounded-full bg-white px-2 text-[10px] font-semibold text-slate-900 shadow-sm ring-1 ring-black/5 sm:text-[11px]"
                     >
                       <span className="truncate">
                         Care{manualBlocksForDay.length > 1 ? ` ${manualBlocksForDay.length}` : ""}
@@ -295,7 +300,7 @@ export function CareCalendar({
                 </div>
                 <a
                   href={`/?${baseQuery}&day=${dayKey}&date=${dayKey}#care-block-panel`}
-                  className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/80 text-slate-700 shadow-sm ring-1 ring-black/5 hover:bg-white"
+                  className="relative z-10 hidden h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/80 text-slate-700 shadow-sm ring-1 ring-black/5 hover:bg-white sm:inline-flex"
                   title="Add care block"
                 >
                   <Plus className="h-4 w-4" />
