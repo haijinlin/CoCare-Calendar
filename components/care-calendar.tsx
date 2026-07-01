@@ -262,7 +262,7 @@ export function CareCalendar({
               </div>
 
               <div className="absolute inset-x-1.5 bottom-1.5 flex min-h-7 items-end justify-between gap-1 sm:inset-x-2 sm:bottom-2">
-                <div className="min-w-0 max-w-[calc(100%-2.25rem)]">
+                <div className="min-w-0 max-w-full sm:max-w-[calc(100%-2.25rem)]">
                   {calendarMarker ? (
                     <a
                       href="#change-requests"

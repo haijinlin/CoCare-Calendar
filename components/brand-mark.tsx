@@ -16,7 +16,7 @@ export function BrandMark({ compact = false, href = "/" }: BrandMarkProps) {
           CoCare
         </div>
         {!compact ? (
-          <div className="hidden text-xs leading-tight text-slate-500 sm:block">
+          <div className="text-[11px] leading-tight text-slate-500 sm:text-xs">
             Derick's care calendar
           </div>
         ) : null}
