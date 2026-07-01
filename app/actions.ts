@@ -281,6 +281,15 @@ export async function createCareBlock(formData: FormData) {
 
 export async function updateCareBlock(id: string, formData: FormData) {
   const currentMember = await requireCurrentFamilyMember();
+  const existingBlock = await prisma.careBlock.findFirst({
+    where: { id, familyId: DEMO_FAMILY_ID, source: "MANUAL" },
+    select: { id: true },
+  });
+
+  if (!existingBlock) {
+    redirect(withError(redirectTarget(formData), "action-not-allowed"));
+  }
+
   const parsed = careBlockSchema.parse({
     childId: getString(formData, "childId"),
     parentRole: getString(formData, "parentRole"),
@@ -318,6 +327,15 @@ export async function updateCareBlock(id: string, formData: FormData) {
 
 export async function deleteCareBlock(id: string, formData?: FormData) {
   const currentMember = await requireCurrentFamilyMember();
+  const existingBlock = await prisma.careBlock.findFirst({
+    where: { id, familyId: DEMO_FAMILY_ID, source: "MANUAL" },
+    select: { id: true },
+  });
+
+  if (!existingBlock) {
+    redirect(withError(redirectTarget(formData), "action-not-allowed"));
+  }
+
   const block = await prisma.careBlock.delete({
     where: { id, familyId: DEMO_FAMILY_ID },
   });

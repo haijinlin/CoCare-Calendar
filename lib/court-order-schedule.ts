@@ -7,7 +7,6 @@ import {
   isAfter,
   isBefore,
   isSameDay,
-  parseISO,
   setHours,
   setMinutes,
   startOfDay,
@@ -46,8 +45,8 @@ type DayAssignment = {
 
 const applicant: ParentRole = "PARENT_A";
 const respondent: ParentRole = "PARENT_B";
-const scheduleStart = parseISO("2026-04-01");
-const scheduleEnd = parseISO("2037-12-31");
+const scheduleStart = dateOnly(2026, 4, 1);
+const scheduleEnd = dateOnly(2037, 12, 31);
 const schoolHolidayYears = new Set([2026, 2027]);
 
 const vicSchoolHolidays: SchoolHolidayInput[] = [
@@ -73,8 +72,33 @@ const publicHolidayRotation2026: PublicHolidayInput[] = [
   { date: "2027-11-02", parentRole: respondent, name: "Melbourne Cup" },
 ];
 
+function dateOnly(year: number, month: number, day: number) {
+  return new Date(year, month - 1, day);
+}
+
+function datePartsInVictoria(value: Date) {
+  const parts = new Intl.DateTimeFormat("en-AU", {
+    timeZone: "Australia/Melbourne",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(value);
+
+  return {
+    year: Number(parts.find((part) => part.type === "year")?.value),
+    month: Number(parts.find((part) => part.type === "month")?.value),
+    day: Number(parts.find((part) => part.type === "day")?.value),
+  };
+}
+
 function toDate(value: string | Date) {
-  return typeof value === "string" ? parseISO(value) : value;
+  if (typeof value === "string") {
+    const [year, month, day] = value.slice(0, 10).split("-").map(Number);
+    return dateOnly(year, month, day);
+  }
+
+  const { year, month, day } = datePartsInVictoria(value);
+  return dateOnly(year, month, day);
 }
 
 function at(date: Date, hours: number, minutes = 0) {
@@ -132,7 +156,7 @@ function applySchoolHoliday(
 }
 
 function applyAlternateWeekends(assignments: Map<string, DayAssignment>, schoolHolidays: SchoolHolidayInput[]) {
-  const firstFriday = parseISO("2026-05-01");
+  const firstFriday = dateOnly(2026, 5, 1);
   let isHaydenWeekend = true;
 
   for (let friday = firstFriday; !isAfter(friday, scheduleEnd); friday = addDays(friday, 7)) {
