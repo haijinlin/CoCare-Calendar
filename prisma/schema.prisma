@@ -33,6 +33,7 @@ model User {
   requestedChanges      ChangeRequest[] @relation("RequestedBy")
   respondedChanges      ChangeRequest[] @relation("RespondedBy")
   expensesPaid          Expense[]       @relation("ExpensePaidBy")
+  handoverNotes         HandoverNote[]   @relation("HandoverNoteAuthor")
   auditLogs             AuditLog[]
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
@@ -47,6 +48,7 @@ model Family {
   changeRequests ChangeRequest[]
   careCredits    CareCredit[]
   expenses       Expense[]
+  handoverNotes  HandoverNote[]
   schoolHolidays SchoolHolidayPeriod[]
   publicHolidays PublicHolidayRule[]
   auditLogs      AuditLog[]
@@ -154,6 +156,21 @@ model Expense {
   updatedAt   DateTime      @updatedAt
 
   @@index([familyId, incurredOn])
+}
+
+model HandoverNote {
+  id           String   @id @default(cuid())
+  familyId     String
+  authorUserId String
+  noteDate     DateTime
+  text         String
+  family       Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  author       User     @relation("HandoverNoteAuthor", fields: [authorUserId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([familyId, noteDate])
+  @@index([authorUserId, createdAt])
 }
 
 model SchoolHolidayPeriod {

@@ -1,4 +1,4 @@
-import { CareBlock, ChangeRequest, Child } from "@prisma/client";
+import { CareBlock, ChangeRequest, Child, HandoverNote } from "@prisma/client";
 import { addDays, format, startOfDay } from "date-fns";
 import { Plus } from "lucide-react";
 import clsx from "clsx";
@@ -11,6 +11,8 @@ type CalendarCareBlock = CareBlock & {
 type CalendarChangeRequest = ChangeRequest & {
   careBlock: CalendarCareBlock;
 };
+
+type CalendarHandoverNote = HandoverNote;
 
 type CalendarDisplay = {
   parentRole: CalendarCareBlock["parentRole"];
@@ -27,6 +29,7 @@ type CareCalendarProps = {
   days: Date[];
   careBlocks: CalendarCareBlock[];
   changeRequests: CalendarChangeRequest[];
+  handoverNotes: CalendarHandoverNote[];
   view: "month" | "week";
   selectedDay: Date | null;
   baseQuery: string;
@@ -170,6 +173,7 @@ export function CareCalendar({
   days,
   careBlocks,
   changeRequests,
+  handoverNotes,
   view,
   selectedDay,
   baseQuery,
@@ -197,6 +201,9 @@ export function CareCalendar({
             block.startsAt < nextDayStart && block.endsAt > dayStart,
           );
           const manualBlocksForDay = blocksForDay.filter((block) => block.source === "MANUAL");
+          const notesForDay = handoverNotes.filter((note) =>
+            note.noteDate >= dayStart && note.noteDate < nextDayStart,
+          );
           const requestsForDay = changeRequests.filter(
             (request) =>
               (request.careBlock.startsAt < nextDayStart && request.careBlock.endsAt > dayStart) ||
@@ -262,7 +269,7 @@ export function CareCalendar({
               </div>
 
               <div className="absolute inset-x-1.5 bottom-1.5 flex min-h-7 items-end justify-between gap-1 sm:inset-x-2 sm:bottom-2">
-                <div className="min-w-0 max-w-full sm:max-w-[calc(100%-2.25rem)]">
+                <div className="flex min-w-0 max-w-full flex-col items-start gap-1 sm:max-w-[calc(100%-2.25rem)]">
                   {calendarMarker ? (
                     <a
                       href="#change-requests"
@@ -293,7 +300,18 @@ export function CareCalendar({
                       className="relative z-10 inline-flex h-6 max-w-full items-center rounded-full bg-white px-2 text-[10px] font-semibold text-slate-900 shadow-sm ring-1 ring-black/5 sm:text-[11px]"
                     >
                       <span className="truncate">
-                        Care{manualBlocksForDay.length > 1 ? ` ${manualBlocksForDay.length}` : ""}
+                        Manual{manualBlocksForDay.length > 1 ? ` ${manualBlocksForDay.length}` : ""}
+                      </span>
+                    </a>
+                  ) : null}
+                  {notesForDay.length > 0 ? (
+                    <a
+                      href={`/?${baseQuery}&day=${dayKey}&date=${dayKey}#handover-notes`}
+                      title={`${notesForDay.length} handover note${notesForDay.length === 1 ? "" : "s"}`}
+                      className="relative z-10 inline-flex h-6 max-w-full items-center rounded-full bg-amber-100 px-2 text-[10px] font-semibold text-amber-900 shadow-sm ring-1 ring-amber-200 sm:text-[11px]"
+                    >
+                      <span className="truncate">
+                        Note{notesForDay.length > 1 ? ` ${notesForDay.length}` : ""}
                       </span>
                     </a>
                   ) : null}

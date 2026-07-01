@@ -1,11 +1,13 @@
-import { CareBlock, CareCredit, ChangeRequest, Child, Expense, User } from "@prisma/client";
+import { CareBlock, CareCredit, ChangeRequest, Child, Expense, HandoverNote, User } from "@prisma/client";
 import { format, isSameDay } from "date-fns";
-import { CalendarClock, Check, DollarSign, Pencil, Plus, RotateCcw, X } from "lucide-react";
+import { CalendarClock, Check, DollarSign, Pencil, RotateCcw, X } from "lucide-react";
 import {
   acceptChangeRequest,
   cancelAcceptedChangeRequest,
   cancelCareCredit,
+  createHandoverNote,
   deleteCareBlock,
+  deleteHandoverNote,
   declineChangeRequest,
   settleCareCredit,
   withdrawChangeRequest,
@@ -20,6 +22,7 @@ type ChangeRequestWithDetails = ChangeRequest & {
   respondedBy: User | null;
 };
 type ExpenseWithUser = Expense & { paidBy: User };
+type HandoverNoteWithAuthor = HandoverNote & { author: User };
 
 type DayDetailPanelProps = {
   day: Date | null;
@@ -27,6 +30,7 @@ type DayDetailPanelProps = {
   requests: ChangeRequestWithDetails[];
   credits: CareCredit[];
   expenses: ExpenseWithUser[];
+  handoverNotes: HandoverNoteWithAuthor[];
   currentUserId: string;
   baseQuery: string;
   returnTo: string;
@@ -91,6 +95,7 @@ export function DayDetailPanel({
   requests,
   credits,
   expenses,
+  handoverNotes,
   currentUserId,
   baseQuery,
   returnTo,
@@ -121,6 +126,7 @@ export function DayDetailPanel({
     (credit) => credit.status === "OPEN" && credit.sourceRequestId && requestIdsForDay.has(credit.sourceRequestId),
   );
   const expensesForDay = expenses.filter((expense) => isSameDay(expense.incurredOn, day));
+  const notesForDay = handoverNotes.filter((note) => isSameDay(note.noteDate, day));
   const openExpenseTotal = expensesForDay
     .filter((expense) => expense.status === "OPEN")
     .reduce((sum, expense) => sum + expense.amountCents, 0);
@@ -133,16 +139,53 @@ export function DayDetailPanel({
           <CalendarClock className="h-4 w-4" />
           {format(day, "EEEE d MMM yyyy")}
         </div>
-        <a
-          href={`/?${baseQuery}&day=${dayParam}&date=${dayParam}#care-block-form`}
-          className="inline-flex h-8 items-center justify-center gap-1 rounded-md border border-slate-200 px-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Care
-        </a>
       </div>
 
       <div className="mt-4 space-y-4">
+        <div id="handover-notes">
+          <h3 className="text-xs font-semibold uppercase text-slate-500">Handover notes</h3>
+          <form action={createHandoverNote} className="mt-2 space-y-2">
+            <input type="hidden" name="noteDate" value={dayParam} />
+            <input type="hidden" name="returnTo" value={`${returnTo}#handover-notes`} />
+            <textarea
+              name="text"
+              rows={3}
+              placeholder="Add pickup details, clothes, medication, travel notes, or other handover reminders."
+              className="w-full resize-none rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-950 outline-none focus:border-slate-500"
+              required
+            />
+            <button className="inline-flex h-9 items-center justify-center rounded-md bg-slate-950 px-3 text-sm font-medium text-white hover:bg-slate-800">
+              Add note
+            </button>
+          </form>
+          <div className="mt-3 space-y-2">
+            {notesForDay.map((note) => (
+              <div key={note.id} className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm">
+                <div className="whitespace-pre-wrap text-slate-900">{note.text}</div>
+                <div className="mt-2 flex items-center justify-between gap-3 text-xs text-amber-900">
+                  <span>
+                    {note.author.name} · {format(note.createdAt, "d MMM h:mm a")}
+                  </span>
+                  <form action={deleteHandoverNote.bind(null, note.id)}>
+                    <input type="hidden" name="returnTo" value={`${returnTo}#handover-notes`} />
+                    <ConfirmSubmitButton
+                      className="inline-flex h-7 items-center justify-center rounded-md border border-amber-300 px-2 font-medium text-amber-950 hover:bg-amber-100"
+                      confirmMessage="Delete this handover note?"
+                    >
+                      Delete
+                    </ConfirmSubmitButton>
+                  </form>
+                </div>
+              </div>
+            ))}
+            {notesForDay.length === 0 ? (
+              <div className="rounded-md border border-dashed border-slate-200 px-3 py-3 text-sm text-slate-400">
+                No handover notes.
+              </div>
+            ) : null}
+          </div>
+        </div>
+
         <div>
           <h3 className="text-xs font-semibold uppercase text-slate-500">Court order schedule</h3>
           <div className="mt-2 space-y-2">
@@ -164,7 +207,7 @@ export function DayDetailPanel({
         </div>
 
         <div>
-          <h3 className="text-xs font-semibold uppercase text-slate-500">Care blocks</h3>
+          <h3 className="text-xs font-semibold uppercase text-slate-500">Manual care</h3>
           <div className="mt-2 space-y-2">
             {manualBlocks.map((block) => (
               <div key={block.id} className="rounded-md border border-slate-200 px-3 py-2 text-sm">
@@ -192,7 +235,7 @@ export function DayDetailPanel({
             ))}
             {manualBlocks.length === 0 ? (
               <div className="rounded-md border border-dashed border-slate-200 px-3 py-3 text-sm text-slate-400">
-                No manual care blocks.
+                No manual care corrections.
               </div>
             ) : null}
           </div>

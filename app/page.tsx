@@ -14,7 +14,7 @@ import {
   startOfWeek,
 } from "date-fns";
 import type { ReactNode } from "react";
-import { ChevronLeft, ChevronRight, Plus, Settings } from "lucide-react";
+import { ChevronLeft, ChevronRight, Settings } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 import { CareBlockForm } from "@/components/care-block-form";
 import { CareCalendar } from "@/components/care-calendar";
@@ -62,7 +62,7 @@ export default async function Home({
   const gridEnd = endOfWeek(calendarEnd, { weekStartsOn: 1 });
 
   const data = await loadCalendarData(gridStart, gridEnd);
-  const { family, children, careBlocks, members, requests, credits, expenses, databaseAvailable } =
+  const { family, children, careBlocks, members, requests, credits, expenses, handoverNotes, databaseAvailable } =
     data;
 
   const parentLabels = members.reduce(
@@ -237,16 +237,7 @@ export default async function Home({
                   Go
                 </button>
               </form>
-              <div className="grid grid-cols-2 gap-2 sm:col-span-2 md:col-span-1 md:flex">
-                <a
-                  href="#care-block-panel"
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-medium text-white shadow-sm hover:bg-slate-800 sm:px-4"
-                  title="Add care block"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span className="hidden sm:inline">Add care block</span>
-                  <span className="sm:hidden">Care</span>
-                </a>
+              <div className="grid gap-2 sm:col-span-2 md:col-span-1 md:flex">
                 <a
                   href="/settings"
                   className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 sm:px-4"
@@ -294,6 +285,12 @@ export default async function Home({
           </div>
         ) : null}
 
+        {params?.error === "invalid-note" ? (
+          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+            Enter a handover note before saving.
+          </div>
+        ) : null}
+
         {!hasSchoolHolidayData ? (
           <div className="rounded-md border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-950">
             VIC school holiday dates are not configured for {selectedYear} yet. Default care,
@@ -308,6 +305,7 @@ export default async function Home({
             days={days}
             careBlocks={careBlocks}
             changeRequests={requests}
+            handoverNotes={handoverNotes}
             view={view}
             selectedDay={selectedDay}
             baseQuery={baseQuery}
@@ -322,6 +320,7 @@ export default async function Home({
                 requests={requests}
                 credits={credits}
                 expenses={expenses}
+                handoverNotes={handoverNotes}
                 currentUserId={currentMember.userId}
                 baseQuery={baseQuery}
                 returnTo={returnTo}
@@ -356,8 +355,8 @@ export default async function Home({
             </CollapsiblePanel>
             <CollapsiblePanel
               id="care-block-panel"
-              title={editingBlock ? "Edit care block" : "Care block"}
-              summary={editingBlock ? "Editing selected block" : "Add or edit manual care"}
+              title={editingBlock ? "Edit manual care" : "Manual care"}
+              summary={editingBlock ? "Editing selected block" : "Advanced"}
               defaultOpen={Boolean(editingBlock)}
             >
               <CareBlockForm
@@ -428,7 +427,7 @@ async function loadCalendarData(gridStart: Date, gridEnd: Date) {
   try {
     await prisma.$queryRaw`SELECT 1`;
 
-    const [family, children, careBlocks, members, requests, credits, expenses] = await Promise.all([
+    const [family, children, careBlocks, members, requests, credits, expenses, handoverNotes] = await Promise.all([
       prisma.family.findUnique({ where: { id: DEMO_FAMILY_ID } }),
       prisma.child.findMany({ where: { familyId: DEMO_FAMILY_ID }, orderBy: { name: "asc" } }),
       prisma.careBlock.findMany({
@@ -465,6 +464,14 @@ async function loadCalendarData(gridStart: Date, gridEnd: Date) {
         orderBy: { incurredOn: "desc" },
         include: { paidBy: true },
       }),
+      prisma.handoverNote.findMany({
+        where: {
+          familyId: DEMO_FAMILY_ID,
+          noteDate: { gte: gridStart, lt: addDays(gridEnd, 1) },
+        },
+        orderBy: { createdAt: "desc" },
+        include: { author: true },
+      }),
     ]);
 
     return {
@@ -475,6 +482,7 @@ async function loadCalendarData(gridStart: Date, gridEnd: Date) {
       requests,
       credits,
       expenses,
+      handoverNotes,
       databaseAvailable: true,
     };
   } catch {
@@ -547,6 +555,7 @@ async function loadCalendarData(gridStart: Date, gridEnd: Date) {
       requests: [],
       credits: [],
       expenses: [],
+      handoverNotes: [],
       databaseAvailable: false,
     };
   }

@@ -32,9 +32,12 @@ export function CareBlockForm({
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-slate-950">
-            {careBlock ? "Edit care block" : "New care block"}
+            {careBlock ? "Edit manual care" : "New manual care"}
           </h2>
-          <p className="mt-1 text-sm text-slate-500">Assign care for the selected dates.</p>
+          <p className="mt-1 text-sm text-slate-500">
+            Advanced correction only. Use change requests for agreed schedule changes and handover
+            notes for reminders.
+          </p>
         </div>
         {careBlock ? (
           <a

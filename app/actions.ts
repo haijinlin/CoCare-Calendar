@@ -767,6 +767,63 @@ export async function deleteExpense(id: string, formData?: FormData) {
   redirect(redirectTarget(formData));
 }
 
+export async function createHandoverNote(formData: FormData) {
+  const currentMember = await requireCurrentFamilyMember();
+  const noteDate = new Date(`${getString(formData, "noteDate")}T00:00:00`);
+  const text = getString(formData, "text").trim();
+
+  if (!text || Number.isNaN(noteDate.getTime())) {
+    redirect(withError(redirectTarget(formData), "invalid-note"));
+  }
+
+  const note = await prisma.handoverNote.create({
+    data: {
+      familyId: DEMO_FAMILY_ID,
+      authorUserId: currentMember.userId,
+      noteDate,
+      text,
+    },
+  });
+
+  await recordAuditLog({
+    actorUserId: currentMember.userId,
+    action: "CREATE",
+    entityType: "HandoverNote",
+    entityId: note.id,
+    summary: `Added handover note for ${localDateKey(note.noteDate)}.`,
+  });
+
+  revalidatePath("/");
+  redirect(redirectTarget(formData));
+}
+
+export async function deleteHandoverNote(id: string, formData?: FormData) {
+  const currentMember = await requireCurrentFamilyMember();
+  const note = await prisma.handoverNote.findFirst({
+    where: { id, familyId: DEMO_FAMILY_ID },
+    select: { id: true, authorUserId: true, noteDate: true },
+  });
+
+  if (!note) {
+    redirect(withError(redirectTarget(formData), "action-not-allowed"));
+  }
+
+  await prisma.handoverNote.delete({
+    where: { id: note.id },
+  });
+
+  await recordAuditLog({
+    actorUserId: currentMember.userId,
+    action: "DELETE",
+    entityType: "HandoverNote",
+    entityId: note.id,
+    summary: `Deleted handover note for ${localDateKey(note.noteDate)}.`,
+  });
+
+  revalidatePath("/");
+  redirect(redirectTarget(formData));
+}
+
 export async function createCareCredit(formData: FormData) {
   const currentMember = await requireCurrentFamilyMember();
   const parsed = careCreditSchema.parse({
