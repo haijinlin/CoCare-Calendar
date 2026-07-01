@@ -1,0 +1,205 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ParentRole {
+  PARENT_A
+  PARENT_B
+  BOTH
+}
+
+enum ChangeRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+}
+
+enum ExpenseStatus {
+  OPEN
+  SETTLED
+}
+
+model User {
+  id                    String          @id @default(cuid())
+  email                 String          @unique
+  name                  String
+  memberships           FamilyMember[]
+  requestedChanges      ChangeRequest[] @relation("RequestedBy")
+  respondedChanges      ChangeRequest[] @relation("RespondedBy")
+  expensesPaid          Expense[]       @relation("ExpensePaidBy")
+  auditLogs             AuditLog[]
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+}
+
+model Family {
+  id             String          @id @default(cuid())
+  name           String
+  members        FamilyMember[]
+  children       Child[]
+  careBlocks     CareBlock[]
+  changeRequests ChangeRequest[]
+  careCredits    CareCredit[]
+  expenses       Expense[]
+  schoolHolidays SchoolHolidayPeriod[]
+  publicHolidays PublicHolidayRule[]
+  auditLogs      AuditLog[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model FamilyMember {
+  id        String     @id @default(cuid())
+  familyId  String
+  userId    String
+  role      ParentRole
+  family    Family     @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([familyId, userId])
+  @@unique([familyId, role])
+}
+
+model Child {
+  id        String      @id @default(cuid())
+  familyId  String
+  name      String
+  family    Family      @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  careBlocks CareBlock[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model CareBlock {
+  id             String          @id @default(cuid())
+  familyId       String
+  childId        String
+  parentRole     ParentRole
+  startsAt       DateTime
+  endsAt         DateTime
+  source         String          @default("MANUAL")
+  handoverNote   String?
+  family         Family          @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  child          Child           @relation(fields: [childId], references: [id], onDelete: Cascade)
+  changeRequests ChangeRequest[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([familyId, startsAt, endsAt])
+  @@index([childId, startsAt, endsAt])
+}
+
+model ChangeRequest {
+  id                   String              @id @default(cuid())
+  familyId             String
+  careBlockId          String
+  requestedById        String
+  respondedById        String?
+  status               ChangeRequestStatus @default(PENDING)
+  proposedParentRole   ParentRole
+  proposedStartsAt     DateTime
+  proposedEndsAt       DateTime
+  reason               String?
+  responseNote         String?
+  family               Family              @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  careBlock            CareBlock           @relation(fields: [careBlockId], references: [id], onDelete: Cascade)
+  requestedBy          User                @relation("RequestedBy", fields: [requestedById], references: [id], onDelete: Cascade)
+  respondedBy          User?               @relation("RespondedBy", fields: [respondedById], references: [id], onDelete: SetNull)
+  careCredits          CareCredit[]
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  @@index([familyId, status])
+}
+
+model CareCredit {
+  id                String        @id @default(cuid())
+  familyId          String
+  owedByRole        ParentRole
+  owedToRole        ParentRole
+  minutes           Int
+  remainingMinutes  Int
+  reason            String?
+  status            String        @default("OPEN")
+  sourceRequestId   String?
+  family            Family        @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  sourceRequest     ChangeRequest? @relation(fields: [sourceRequestId], references: [id], onDelete: SetNull)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([familyId, status])
+  @@index([owedByRole, owedToRole])
+}
+
+model Expense {
+  id          String        @id @default(cuid())
+  familyId    String
+  paidById    String
+  title       String
+  amountCents Int
+  incurredOn  DateTime
+  status      ExpenseStatus @default(OPEN)
+  notes       String?
+  family      Family        @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  paidBy      User          @relation("ExpensePaidBy", fields: [paidById], references: [id], onDelete: Cascade)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([familyId, incurredOn])
+}
+
+model SchoolHolidayPeriod {
+  id        String   @id @default(cuid())
+  familyId  String
+  year      Int
+  label     String
+  startsOn  DateTime
+  endsOn    DateTime
+  source    String   @default("MANUAL")
+  sourceUrl String?
+  family    Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([familyId, year])
+  @@index([familyId, startsOn, endsOn])
+}
+
+model PublicHolidayRule {
+  id         String     @id @default(cuid())
+  familyId   String
+  name       String
+  date       DateTime
+  parentRole ParentRole
+  source     String     @default("MANUAL")
+  sourceUrl  String?
+  family     Family     @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([familyId, date])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  familyId    String
+  actorUserId String
+  action      String
+  entityType  String
+  entityId    String?
+  summary     String
+  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  actor       User     @relation(fields: [actorUserId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@index([familyId, createdAt])
+  @@index([actorUserId, createdAt])
+}
