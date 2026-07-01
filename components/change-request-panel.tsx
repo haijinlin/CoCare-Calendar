@@ -199,7 +199,8 @@ export function ChangeRequestPanel({
   const requestHref = (
     nextStatus: typeof requestStatus = requestStatus,
     nextScope: typeof requestScope = requestScope,
-  ) => `/?${baseQuery}${selectedDateQuery}&requests=${nextScope}&requestStatus=${nextStatus}#change-requests`;
+  ) =>
+    `/?${baseQuery}${selectedDateQuery}&requests=${nextScope}&requestStatus=${nextStatus}&open=changeRequests#change-requests`;
   const statusLinks = [
     { value: "pending", label: "Pending" },
     { value: "accepted", label: "Accepted" },
@@ -228,7 +229,7 @@ export function ChangeRequestPanel({
         </div>
         {editingRequest ? (
           <a
-            href={`/?${baseQuery}#change-requests`}
+            href={`/?${baseQuery}&open=changeRequests#change-requests`}
             className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50"
             title="Cancel edit"
           >
@@ -487,7 +488,7 @@ function RequestCard({
         <div className="mt-3 grid grid-cols-2 gap-2">
           {canEdit ? (
             <a
-              href={`/?${baseQuery}&editRequest=${request.id}#change-requests`}
+              href={`/?${baseQuery}&editRequest=${request.id}&open=changeRequests#change-requests`}
               className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               <Pencil className="h-4 w-4" />

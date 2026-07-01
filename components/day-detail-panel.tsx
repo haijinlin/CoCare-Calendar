@@ -140,7 +140,7 @@ export function DayDetailPanel({
           {format(day, "EEEE d MMM yyyy")}
         </div>
         <a
-          href={`/?${baseQuery}&day=${dayParam}&date=${dayParam}#change-requests`}
+          href={`/?${baseQuery}&day=${dayParam}&date=${dayParam}&open=changeRequests#change-requests`}
           className="inline-flex h-8 items-center justify-center gap-1 rounded-md border border-slate-200 px-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
         >
           <Plus className="h-3.5 w-3.5" />
@@ -275,7 +275,7 @@ export function DayDetailPanel({
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     {request.requestedById === currentUserId ? (
                       <a
-                        href={`/?${baseQuery}&day=${dayParam}&editRequest=${request.id}#change-requests`}
+                        href={`/?${baseQuery}&day=${dayParam}&editRequest=${request.id}&open=changeRequests#change-requests`}
                         className="inline-flex h-8 w-full items-center justify-center gap-1 rounded-md border border-slate-200 px-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
                       >
                         <Pencil className="h-3.5 w-3.5" />

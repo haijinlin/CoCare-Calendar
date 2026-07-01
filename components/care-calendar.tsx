@@ -1,6 +1,5 @@
 import { CareBlock, ChangeRequest, Child, HandoverNote } from "@prisma/client";
 import { addDays, format, startOfDay } from "date-fns";
-import { Plus } from "lucide-react";
 import clsx from "clsx";
 import { ParentLabels } from "@/lib/parents";
 
@@ -272,7 +271,7 @@ export function CareCalendar({
                 <div className="flex min-w-0 max-w-full flex-col items-start gap-1 sm:max-w-[calc(100%-2.25rem)]">
                   {calendarMarker ? (
                     <a
-                      href="#change-requests"
+                      href={`/?${baseQuery}&day=${dayKey}&date=${dayKey}&open=changeRequests#change-requests`}
                       title={
                         calendarMarker.reason ??
                         `${calendarMarker.status.toLowerCase()} change request`
@@ -316,13 +315,6 @@ export function CareCalendar({
                     </a>
                   ) : null}
                 </div>
-                <a
-                  href={`/?${baseQuery}&day=${dayKey}&date=${dayKey}#change-requests`}
-                  className="relative z-10 hidden h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/80 text-slate-700 shadow-sm ring-1 ring-black/5 hover:bg-white sm:inline-flex"
-                  title="Request change"
-                >
-                  <Plus className="h-4 w-4" />
-                </a>
               </div>
             </div>
           );

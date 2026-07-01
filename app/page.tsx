@@ -45,6 +45,7 @@ export default async function Home({
     requests?: string;
     requestStatus?: string;
     expenseStatus?: string;
+    open?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -115,6 +116,7 @@ export default async function Home({
     params?.expenseStatus === "settled" || params?.expenseStatus === "all"
       ? params.expenseStatus
       : "open";
+  const openPanel = params?.open;
   const openCreditCount = credits.filter((credit) => credit.status === "OPEN").length;
   const pendingRequestCount = requests.filter((request) => request.status === "PENDING").length;
   const openExpenseCents = expenses
@@ -335,7 +337,11 @@ export default async function Home({
                   ? "1 pending"
                   : `${pendingRequestCount} pending`
               }
-              defaultOpen={Boolean(editingRequest) || pendingRequestCount > 0}
+              defaultOpen={
+                openPanel === "changeRequests" ||
+                Boolean(editingRequest) ||
+                pendingRequestCount > 0
+              }
             >
               <ChangeRequestPanel
                 key={`change-request-${editingRequest?.id ?? formDefaultDateKey}`}
