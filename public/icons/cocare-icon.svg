@@ -1,11 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="CoCare">
-  <rect width="512" height="512" rx="96" fill="#0f172a"/>
-  <rect x="112" y="128" width="288" height="256" rx="36" fill="#ffffff"/>
-  <rect x="112" y="128" width="288" height="76" rx="36" fill="#2563eb"/>
-  <rect x="168" y="96" width="28" height="78" rx="14" fill="#e2e8f0"/>
-  <rect x="316" y="96" width="28" height="78" rx="14" fill="#e2e8f0"/>
-  <path d="M257 342c-8 0-15-3-21-9l-58-58c-16-16-16-41 0-57 15-15 39-16 55-3l23 19 23-19c16-13 40-12 55 3 16 16 16 41 0 57l-56 58c-6 6-13 9-21 9Z" fill="#e11d48"/>
-  <circle cx="177" cy="240" r="16" fill="#cbd5e1"/>
-  <circle cx="256" cy="240" r="16" fill="#cbd5e1"/>
-  <circle cx="335" cy="240" r="16" fill="#cbd5e1"/>
+  <defs>
+    <linearGradient id="bg" x1="96" y1="56" x2="416" y2="456" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#020617" flood-opacity=".24"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <g filter="url(#shadow)">
+    <rect x="104" y="118" width="304" height="292" rx="44" fill="#fff"/>
+    <path d="M104 164c0-25 20-46 46-46h212c25 0 46 21 46 46v48H104v-48Z" fill="#dbeafe"/>
+    <rect x="160" y="86" width="30" height="86" rx="15" fill="#bfdbfe"/>
+    <rect x="322" y="86" width="30" height="86" rx="15" fill="#bfdbfe"/>
+    <circle cx="184" cy="268" r="26" fill="#2563eb"/>
+    <circle cx="256" cy="268" r="26" fill="#f59e0b"/>
+    <circle cx="328" cy="268" r="26" fill="#e11d48"/>
+    <path d="M256 366c-7 0-14-3-19-8l-38-38c-15-15-15-38 0-52 14-14 36-15 51-3l6 5 6-5c15-12 37-11 51 3 15 14 15 37 0 52l-38 38c-5 5-12 8-19 8Z" fill="#0f172a"/>
+  </g>
 </svg>
