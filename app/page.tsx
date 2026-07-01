@@ -434,6 +434,7 @@ async function loadCalendarData(gridStart: Date, gridEnd: Date) {
       prisma.careBlock.findMany({
         where: {
           familyId: DEMO_FAMILY_ID,
+          source: { in: ["COURT_ORDER", "MANUAL"] },
           startsAt: { lt: addDays(gridEnd, 1) },
           endsAt: { gt: gridStart },
         },

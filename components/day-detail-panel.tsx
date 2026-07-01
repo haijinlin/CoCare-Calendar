@@ -108,7 +108,7 @@ export function DayDetailPanel({
   }
 
   const blocksForDay = careBlocks.filter((block) => overlapsDay(block.startsAt, block.endsAt, day));
-  const courtBlocks = blocksForDay.filter((block) => block.source !== "MANUAL");
+  const courtBlocks = blocksForDay.filter((block) => block.source === "COURT_ORDER");
   const manualBlocks = blocksForDay.filter((block) => block.source === "MANUAL");
   const requestsForDay = requests.filter(
     (request) =>
@@ -168,7 +168,7 @@ export function DayDetailPanel({
             {manualBlocks.map((block) => (
               <a
                 key={block.id}
-                href={`/?${baseQuery}&day=${dayParam}&edit=${block.id}#care-block-form`}
+                href={`/?${baseQuery}&day=${dayParam}&edit=${block.id}#care-block-panel`}
                 className="block rounded-md border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50"
               >
                 <div className="font-medium text-slate-950">{parentLabels[block.parentRole]}</div>

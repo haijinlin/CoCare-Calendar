@@ -205,7 +205,7 @@ export function CareCalendar({
           const pendingRequest = requestsForDay.find((request) => request.status === "PENDING");
           const acceptedRequest = requestsForDay.find((request) => request.status === "ACCEPTED");
           const displayBlock = blocksForDay
-            .filter((block) => block.source !== "MANUAL")
+            .filter((block) => block.source === "COURT_ORDER")
             .toSorted((a, b) => blockScore(b) - blockScore(a))[0];
           const calendarMarker = pendingRequest ?? acceptedRequest;
           const display = buildDisplay(displayBlock, acceptedRequest, dayStart, nextDayStart);
