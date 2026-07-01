@@ -240,7 +240,7 @@ export default async function RulesPage({
               <form action={applyHolidayRulesToCourtOrder}>
                 <ConfirmSubmitButton
                   className="h-10 rounded-md bg-slate-950 px-4 text-sm font-medium text-white hover:bg-slate-800"
-                  confirmMessage="Apply these holiday rules to the calendar? This will rebuild default court-order blocks, while preserving change-request history, manual care blocks, and expenses."
+                  confirmMessage="Apply these holiday rules to the calendar? This will rebuild default court-order blocks while preserving change-request history and expenses."
                 >
                   Apply to calendar
                 </ConfirmSubmitButton>

@@ -6,7 +6,6 @@ import {
   cancelAcceptedChangeRequest,
   cancelCareCredit,
   createHandoverNote,
-  deleteCareBlock,
   deleteHandoverNote,
   declineChangeRequest,
   settleCareCredit,
@@ -115,7 +114,6 @@ export function DayDetailPanel({
 
   const blocksForDay = careBlocks.filter((block) => overlapsDay(block.startsAt, block.endsAt, day));
   const courtBlocks = blocksForDay.filter((block) => block.source === "COURT_ORDER");
-  const manualBlocks = blocksForDay.filter((block) => block.source === "MANUAL");
   const requestsForDay = requests.filter(
     (request) =>
       overlapsDay(request.proposedStartsAt, request.proposedEndsAt, day) ||
@@ -208,41 +206,6 @@ export function DayDetailPanel({
             {courtBlocks.length === 0 ? (
               <div className="rounded-md border border-dashed border-slate-200 px-3 py-3 text-sm text-slate-400">
                 No court-order schedule.
-              </div>
-            ) : null}
-          </div>
-        </div>
-
-        <div>
-          <h3 className="text-xs font-semibold uppercase text-slate-500">Manual care</h3>
-          <div className="mt-2 space-y-2">
-            {manualBlocks.map((block) => (
-              <div key={block.id} className="rounded-md border border-slate-200 px-3 py-2 text-sm">
-                <a
-                  href={`/?${baseQuery}&day=${dayParam}&edit=${block.id}#care-block-panel`}
-                  className="block hover:text-slate-700"
-                >
-                  <div className="font-medium text-slate-950">{parentLabels[block.parentRole]}</div>
-                  <div className="text-slate-500">{timeRange(block.startsAt, block.endsAt)}</div>
-                  {block.handoverNote ? (
-                    <div className="mt-1 text-slate-700">{block.handoverNote}</div>
-                  ) : null}
-                </a>
-                <form action={deleteCareBlock.bind(null, block.id)} className="mt-2">
-                  <input type="hidden" name="returnTo" value={`${returnTo}#day-details`} />
-                  <ConfirmSubmitButton
-                    className="inline-flex h-8 items-center justify-center gap-1 rounded-md border border-red-200 px-2 text-xs font-medium text-red-700 hover:bg-red-50"
-                    confirmMessage="Delete this manual care block?"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                    Delete
-                  </ConfirmSubmitButton>
-                </form>
-              </div>
-            ))}
-            {manualBlocks.length === 0 ? (
-              <div className="rounded-md border border-dashed border-slate-200 px-3 py-3 text-sm text-slate-400">
-                No manual care corrections.
               </div>
             ) : null}
           </div>

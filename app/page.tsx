@@ -16,7 +16,6 @@ import {
 import type { ReactNode } from "react";
 import { ChevronLeft, ChevronRight, Settings } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
-import { CareBlockForm } from "@/components/care-block-form";
 import { CareCalendar } from "@/components/care-calendar";
 import { CareCreditPanel } from "@/components/care-credit-panel";
 import { ChangeRequestPanel } from "@/components/change-request-panel";
@@ -37,7 +36,6 @@ export default async function Home({
     month?: string;
     week?: string;
     view?: string;
-    edit?: string;
     editRequest?: string;
     date?: string;
     day?: string;
@@ -84,9 +82,6 @@ export default async function Home({
   const selectedDay = parsedSelectedDay && isValid(parsedSelectedDay) ? parsedSelectedDay : null;
   const formDefaultDate = defaultCareBlockDate ?? selectedDay;
   const formDefaultDateKey = formDefaultDate ? format(formDefaultDate, "yyyy-MM-dd") : "none";
-  const editingBlock = params?.edit
-    ? careBlocks.find((block) => block.id === params.edit)
-    : null;
   const editingRequest = params?.editRequest
     ? requests.find((request) => request.id === params.editRequest && request.status === "PENDING")
     : null;
@@ -267,13 +262,6 @@ export default async function Home({
           </div>
         ) : null}
 
-        {params?.error === "care-block-overlap" ? (
-          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
-            That care block overlaps an existing manual care block. Adjust the time or edit the
-            existing care block.
-          </div>
-        ) : null}
-
         {params?.error === "change-request-overlap" ? (
           <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
             That change request overlaps an existing pending or accepted change. Resolve the existing
@@ -360,21 +348,6 @@ export default async function Home({
               />
             </CollapsiblePanel>
             <CollapsiblePanel
-              id="care-block-panel"
-              title={editingBlock ? "Edit manual care" : "Manual care"}
-              summary={editingBlock ? "Editing selected block" : "Advanced"}
-              defaultOpen={Boolean(editingBlock)}
-            >
-              <CareBlockForm
-                key={`care-block-${editingBlock?.id ?? formDefaultDateKey}`}
-                children={children}
-                careBlock={editingBlock}
-                parentLabels={parentLabels}
-                defaultDate={formDefaultDate}
-                returnTo={`${returnTo}#care-block-panel`}
-              />
-            </CollapsiblePanel>
-            <CollapsiblePanel
               title="Make-up balance"
               summary={`${openCreditCount} open`}
               defaultOpen={openCreditCount > 0}
@@ -439,7 +412,7 @@ async function loadCalendarData(gridStart: Date, gridEnd: Date) {
       prisma.careBlock.findMany({
         where: {
           familyId: DEMO_FAMILY_ID,
-          source: { in: ["COURT_ORDER", "MANUAL"] },
+          source: "COURT_ORDER",
           startsAt: { lt: addDays(gridEnd, 1) },
           endsAt: { gt: gridStart },
         },

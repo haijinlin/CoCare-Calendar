@@ -15,7 +15,6 @@ type CalendarHandoverNote = HandoverNote;
 
 type CalendarDisplay = {
   parentRole: CalendarCareBlock["parentRole"];
-  source: CalendarCareBlock["source"];
   note: string | null;
   isPickupDay: boolean;
   isPublicHoliday: boolean;
@@ -110,15 +109,6 @@ function describeDisplay(display: CalendarDisplay, parentLabels: ParentLabels) {
   return name;
 }
 
-function careMarkerTitle(blocks: CalendarCareBlock[]) {
-  return blocks
-    .map((block) => {
-      const note = block.handoverNote ? ` - ${block.handoverNote}` : "";
-      return `${format(block.startsAt, "h:mm a")} to ${format(block.endsAt, "h:mm a")}${note}`;
-    })
-    .join("\n");
-}
-
 function buildDisplay(
   displayBlock: CalendarCareBlock | undefined,
   acceptedRequest: CalendarChangeRequest | undefined,
@@ -139,7 +129,6 @@ function buildDisplay(
 
     return {
       parentRole: acceptedRequest.proposedParentRole,
-      source: "MANUAL",
       note: originalNote || acceptedRequest.reason,
       isPickupDay: startsDuringDay,
       isPublicHoliday: originalNote.includes("public holiday"),
@@ -155,7 +144,6 @@ function buildDisplay(
 
   return {
     parentRole: displayBlock.parentRole,
-    source: displayBlock.source,
     note: displayBlock.handoverNote,
     isPickupDay:
       blockStartsDuringDay &&
@@ -199,7 +187,6 @@ export function CareCalendar({
           const blocksForDay = careBlocks.filter((block) =>
             block.startsAt < nextDayStart && block.endsAt > dayStart,
           );
-          const manualBlocksForDay = blocksForDay.filter((block) => block.source === "MANUAL");
           const notesForDay = handoverNotes.filter((note) =>
             note.noteDate >= dayStart && note.noteDate < nextDayStart,
           );
@@ -285,21 +272,6 @@ export function CareCalendar({
                     >
                       <span className="truncate">
                         {calendarMarker.status === "PENDING" ? "Request" : "Changed"}
-                      </span>
-                    </a>
-                  ) : null}
-                  {manualBlocksForDay.length > 0 ? (
-                    <a
-                      href={
-                        manualBlocksForDay.length === 1
-                          ? `/?month=${format(monthStart, "yyyy-MM")}&edit=${manualBlocksForDay[0].id}#care-block-panel`
-                          : `/?${baseQuery}&day=${dayKey}#day-details`
-                      }
-                      title={careMarkerTitle(manualBlocksForDay)}
-                      className="relative z-10 inline-flex h-6 max-w-full items-center rounded-full bg-white px-2 text-[10px] font-semibold text-slate-900 shadow-sm ring-1 ring-black/5 sm:text-[11px]"
-                    >
-                      <span className="truncate">
-                        Manual{manualBlocksForDay.length > 1 ? ` ${manualBlocksForDay.length}` : ""}
                       </span>
                     </a>
                   ) : null}
