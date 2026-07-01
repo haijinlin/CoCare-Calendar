@@ -112,20 +112,6 @@ async function hasChangeRequestOverlap({
   return Boolean(conflict);
 }
 
-function careBlockKey(block: {
-  parentRole: string;
-  startsAt: Date;
-  endsAt: Date;
-  handoverNote: string | null;
-}) {
-  return [
-    block.parentRole,
-    block.startsAt.toISOString(),
-    block.endsAt.toISOString(),
-    block.handoverNote ?? "",
-  ].join("|");
-}
-
 function localDateKey(date: Date) {
   return [
     date.getFullYear(),
@@ -1127,7 +1113,7 @@ export async function deletePublicHolidayRule(id: string) {
 
 export async function applyHolidayRulesToCourtOrder() {
   const currentMember = await requireCurrentFamilyMember();
-  const [child, schoolHolidays, publicHolidays, referencedCourtBlocks] = await Promise.all([
+  const [child, schoolHolidays, publicHolidays] = await Promise.all([
     prisma.child.findFirstOrThrow({
       where: { familyId: DEMO_FAMILY_ID },
       orderBy: { createdAt: "asc" },
@@ -1140,21 +1126,7 @@ export async function applyHolidayRulesToCourtOrder() {
       where: { familyId: DEMO_FAMILY_ID },
       orderBy: [{ date: "asc" }, { source: "asc" }],
     }),
-    prisma.careBlock.findMany({
-      where: {
-        familyId: DEMO_FAMILY_ID,
-        source: "COURT_ORDER",
-        changeRequests: { some: {} },
-      },
-      select: {
-        parentRole: true,
-        startsAt: true,
-        endsAt: true,
-        handoverNote: true,
-      },
-    }),
   ]);
-  const referencedKeys = new Set(referencedCourtBlocks.map(careBlockKey));
   const generatedBlocks = generateCourtOrderCareBlocks2026({
     schoolHolidays: schoolHolidays.map((period) => ({
       start: period.startsOn,
@@ -1168,7 +1140,6 @@ export async function applyHolidayRulesToCourtOrder() {
       name: holiday.name,
     })),
   })
-    .filter((block) => !referencedKeys.has(careBlockKey(block)))
     .map((block) => ({
       familyId: DEMO_FAMILY_ID,
       childId: child.id,
@@ -1177,11 +1148,19 @@ export async function applyHolidayRulesToCourtOrder() {
     }));
 
   await prisma.$transaction(async (tx) => {
+    await tx.careBlock.updateMany({
+      where: {
+        familyId: DEMO_FAMILY_ID,
+        source: "COURT_ORDER",
+        changeRequests: { some: {} },
+      },
+      data: { source: "COURT_ORDER_ARCHIVE" },
+    });
+
     await tx.careBlock.deleteMany({
       where: {
         familyId: DEMO_FAMILY_ID,
         source: "COURT_ORDER",
-        changeRequests: { none: {} },
       },
     });
 
