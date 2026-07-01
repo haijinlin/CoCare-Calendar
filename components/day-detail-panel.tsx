@@ -1,6 +1,6 @@
 import { CareBlock, CareCredit, ChangeRequest, Child, Expense, HandoverNote, User } from "@prisma/client";
 import { format, isSameDay } from "date-fns";
-import { CalendarClock, Check, DollarSign, Pencil, RotateCcw, X } from "lucide-react";
+import { CalendarClock, Check, DollarSign, Pencil, Plus, RotateCcw, X } from "lucide-react";
 import {
   acceptChangeRequest,
   cancelAcceptedChangeRequest,
@@ -139,6 +139,13 @@ export function DayDetailPanel({
           <CalendarClock className="h-4 w-4" />
           {format(day, "EEEE d MMM yyyy")}
         </div>
+        <a
+          href={`/?${baseQuery}&day=${dayParam}&date=${dayParam}#change-requests`}
+          className="inline-flex h-8 items-center justify-center gap-1 rounded-md border border-slate-200 px-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Request change
+        </a>
       </div>
 
       <div className="mt-4 space-y-4">

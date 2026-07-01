@@ -317,9 +317,9 @@ export function CareCalendar({
                   ) : null}
                 </div>
                 <a
-                  href={`/?${baseQuery}&day=${dayKey}&date=${dayKey}#care-block-panel`}
+                  href={`/?${baseQuery}&day=${dayKey}&date=${dayKey}#change-requests`}
                   className="relative z-10 hidden h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/80 text-slate-700 shadow-sm ring-1 ring-black/5 hover:bg-white sm:inline-flex"
-                  title="Add care block"
+                  title="Request change"
                 >
                   <Plus className="h-4 w-4" />
                 </a>
