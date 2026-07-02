@@ -82,7 +82,14 @@ export default async function Home({
   const defaultCareBlockDate =
     parsedDefaultDate && isValid(parsedDefaultDate) ? parsedDefaultDate : null;
   const parsedSelectedDay = params?.day ? new Date(`${params.day}T00:00:00`) : null;
-  const selectedDay = parsedSelectedDay && isValid(parsedSelectedDay) ? parsedSelectedDay : null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const selectedDay =
+    parsedSelectedDay && isValid(parsedSelectedDay)
+      ? parsedSelectedDay
+      : today >= gridStart && today <= gridEnd
+        ? today
+        : null;
   const formDefaultDate = defaultCareBlockDate ?? selectedDay;
   const formDefaultDateKey = formDefaultDate ? format(formDefaultDate, "yyyy-MM-dd") : "none";
   const editingRequest = params?.editRequest
