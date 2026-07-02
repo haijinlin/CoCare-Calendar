@@ -120,6 +120,30 @@ function localDateKey(date: Date) {
   ].join("-");
 }
 
+function localMonthKey(date: Date) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+  ].join("-");
+}
+
+function changeRequestCalendarPath(
+  request: { id: string; proposedStartsAt: Date; status?: string },
+  requestStatus?: "pending" | "accepted" | "all",
+) {
+  const day = localDateKey(request.proposedStartsAt);
+  const month = localMonthKey(request.proposedStartsAt);
+  const status =
+    requestStatus ??
+    (request.status === "PENDING"
+      ? "pending"
+      : request.status === "ACCEPTED"
+        ? "accepted"
+        : "all");
+
+  return `/?view=month&month=${month}&day=${day}&date=${day}&requests=day&requestStatus=${status}&open=changeRequests&focusRequest=${request.id}#request-${request.id}`;
+}
+
 function localDateTimeLabel(date: Date) {
   return date.toLocaleString("en-AU", {
     timeZone: "Australia/Melbourne",
@@ -424,7 +448,7 @@ export async function createChangeRequest(formData: FormData) {
       }),
       request.reason ? `Reason: ${request.reason}` : null,
       "",
-      `Open pending requests: ${calendarUrl("/?requestStatus=pending#change-requests")}`,
+      `Open this request: ${calendarUrl(changeRequestCalendarPath(request, "pending"))}`,
     ]
       .filter(Boolean)
       .join("\n"),
@@ -546,7 +570,7 @@ export async function acceptChangeRequest(id: string, formData: FormData) {
       `Until: ${localDateTimeLabel(updatedRequest.proposedEndsAt)}`,
       `Duration: ${durationLabel(updatedRequest.proposedStartsAt, updatedRequest.proposedEndsAt)}`,
       "",
-      `Open accepted requests: ${calendarUrl("/?requestStatus=accepted#change-requests")}`,
+      `Open this request: ${calendarUrl(changeRequestCalendarPath(updatedRequest, "accepted"))}`,
     ].join("\n"),
   });
 
@@ -605,7 +629,7 @@ export async function cancelAcceptedChangeRequest(id: string, formData: FormData
       `Until: ${localDateTimeLabel(updatedRequest.proposedEndsAt)}`,
       `Duration: ${durationLabel(updatedRequest.proposedStartsAt, updatedRequest.proposedEndsAt)}`,
       "",
-      `Open change requests: ${calendarUrl("/?requestStatus=all#change-requests")}`,
+      `Open this request: ${calendarUrl(changeRequestCalendarPath(updatedRequest, "all"))}`,
     ].join("\n"),
   });
 
@@ -690,7 +714,7 @@ export async function declineChangeRequest(id: string, formData: FormData) {
       `Duration: ${durationLabel(updatedRequest.proposedStartsAt, updatedRequest.proposedEndsAt)}`,
       updatedRequest.responseNote ? `Note: ${updatedRequest.responseNote}` : null,
       "",
-      `Open change requests: ${calendarUrl("/?requestStatus=all#change-requests")}`,
+      `Open this request: ${calendarUrl(changeRequestCalendarPath(updatedRequest, "all"))}`,
     ]
       .filter(Boolean)
       .join("\n"),

@@ -44,6 +44,7 @@ export default async function Home({
     requestStatus?: string;
     expenseStatus?: string;
     open?: string;
+    focusRequest?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -303,7 +304,7 @@ export default async function Home({
             parentLabels={parentLabels}
           />
           <aside className="flex flex-col gap-4">
-            <div id="day-details">
+            <div id="day-details" className="scroll-mt-4">
               <DayDetailPanel
                 day={selectedDay}
                 careBlocks={careBlocks}
@@ -342,6 +343,7 @@ export default async function Home({
                 monthStart={monthStart}
                 requestScope={requestScope}
                 requestStatus={requestStatus}
+                focusRequestId={params?.focusRequest ?? null}
                 baseQuery={baseQuery}
                 returnTo={`${returnTo}#change-requests`}
                 parentLabels={parentLabels}

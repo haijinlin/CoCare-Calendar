@@ -1,5 +1,5 @@
 import { CareBlock, CareCredit, ChangeRequest, Child, User } from "@prisma/client";
-import { addDays, endOfDay, format, isSameMonth, setHours, setMinutes, startOfDay } from "date-fns";
+import { addDays, endOfDay, format, isSameDay, isSameMonth, setHours, setMinutes, startOfDay } from "date-fns";
 import { Check, Pencil, RotateCcw, Save, Send, X } from "lucide-react";
 import {
   acceptChangeRequest,
@@ -31,6 +31,7 @@ type ChangeRequestPanelProps = {
   monthStart: Date;
   requestScope: "day" | "month" | "all";
   requestStatus: "pending" | "accepted" | "all";
+  focusRequestId?: string | null;
   baseQuery: string;
   returnTo: string;
   parentLabels: ParentLabels;
@@ -63,6 +64,20 @@ function getDefaultRequestRange(defaultDate: Date | null | undefined, careBlock:
     start: startsOnSelectedDay ? careBlock.startsAt : dayStart,
     end: startsOnSelectedDay ? careBlock.endsAt : dayEnd,
   };
+}
+
+function getDefaultCareBlock(defaultDate: Date | null | undefined, careBlocks: CareBlockWithChild[]) {
+  if (!defaultDate) return null;
+
+  const blocksForDay = careBlocks
+    .filter((block) => block.source === "COURT_ORDER" && overlapsDay(block.startsAt, block.endsAt, defaultDate))
+    .toSorted((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
+
+  return (
+    blocksForDay.find((block) => isSameDay(block.startsAt, defaultDate)) ??
+    blocksForDay.find((block) => block.endsAt > startOfDay(defaultDate)) ??
+    null
+  );
 }
 
 function getDefaultMakeUp(
@@ -141,14 +156,13 @@ export function ChangeRequestPanel({
   monthStart,
   requestScope,
   requestStatus,
+  focusRequestId,
   baseQuery,
   returnTo,
   parentLabels,
 }: ChangeRequestPanelProps) {
   const currentUser = users.find((user) => user.id === currentUserId);
-  const defaultCareBlock = defaultDate
-    ? (careBlocks.find((block) => block.source !== "MANUAL" && overlapsDay(block.startsAt, block.endsAt, defaultDate)) ?? null)
-    : null;
+  const defaultCareBlock = getDefaultCareBlock(defaultDate, careBlocks);
   const defaultRange = getDefaultRequestRange(defaultDate, defaultCareBlock);
   const defaultParentRole =
     defaultCareBlock?.parentRole === "PARENT_A"
@@ -413,6 +427,7 @@ export function ChangeRequestPanel({
             baseQuery={baseQuery}
             returnTo={returnTo}
             parentLabels={parentLabels}
+            isFocused={request.id === focusRequestId}
           />
         ))}
         {visibleRequests.length === 0 ? (
@@ -440,12 +455,14 @@ function RequestCard({
   baseQuery,
   returnTo,
   parentLabels,
+  isFocused,
 }: {
   request: ChangeRequestWithUsers;
   currentUserId: string;
   baseQuery: string;
   returnTo: string;
   parentLabels: ParentLabels;
+  isFocused: boolean;
 }) {
   const isRequester = request.requestedById === currentUserId;
   const canRespond = request.status === "PENDING" && !isRequester;
@@ -454,7 +471,14 @@ function RequestCard({
   const auditLines = requestAuditLines(request);
 
   return (
-    <div className="rounded-md border border-slate-200 p-3 text-sm">
+    <div
+      id={`request-${request.id}`}
+      className={`scroll-mt-4 rounded-md border p-3 text-sm ${
+        isFocused
+          ? "border-amber-300 bg-amber-50 shadow-sm ring-2 ring-amber-200"
+          : "border-slate-200 bg-white"
+      }`}
+    >
       <div className="flex items-center justify-between gap-3">
         <div className="font-medium text-slate-950">
           <PersonBadge
