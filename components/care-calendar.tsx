@@ -117,6 +117,7 @@ function buildDisplay(
   dayStart: Date,
   nextDayStart: Date,
   handbackPickupTime?: Date,
+  suppressCourtOrderPickup = false,
 ): CalendarDisplay | null {
   if (!displayBlock && !acceptedRequest) return null;
 
@@ -150,7 +151,8 @@ function buildDisplay(
     note: displayBlock.handoverNote,
     isPickupDay:
       Boolean(handbackPickupTime) ||
-      (blockStartsDuringDay &&
+      (!suppressCourtOrderPickup &&
+        blockStartsDuringDay &&
         (displayBlock.handoverNote?.includes("pickup from school") ||
           isMorningHaydenPickup(displayBlock))),
     isPublicHoliday: displayBlock.handoverNote?.includes("public holiday") ?? false,
@@ -191,6 +193,38 @@ function handbackPickupTimeAfterAcceptedChange({
   pickupTime.setHours(9, 30, 0, 0);
 
   return pickupTime;
+}
+
+function previousNonBothCourtOrderRole(careBlocks: CalendarCareBlock[], dayStart: Date) {
+  for (let offset = 1; offset <= 7; offset += 1) {
+    const previousDayStart = addDays(dayStart, -offset);
+    const previousDayEnd = addDays(previousDayStart, 1);
+    const previousBlock = careBlocks
+      .filter(
+        (block) =>
+          block.source === "COURT_ORDER" &&
+          block.parentRole !== "BOTH" &&
+          block.startsAt < previousDayEnd &&
+          block.endsAt > previousDayStart,
+      )
+      .toSorted((a, b) => blockScore(b) - blockScore(a))[0];
+
+    if (previousBlock) {
+      return previousBlock.parentRole;
+    }
+  }
+
+  return null;
+}
+
+function shouldSuppressCourtOrderPickupAfterBothDay(
+  careBlocks: CalendarCareBlock[],
+  displayBlock: CalendarCareBlock | undefined,
+  dayStart: Date,
+) {
+  if (!displayBlock || !isMorningHaydenPickup(displayBlock)) return false;
+
+  return previousNonBothCourtOrderRole(careBlocks, dayStart) === displayBlock.parentRole;
 }
 
 export function CareCalendar({
@@ -246,12 +280,18 @@ export function CareCalendar({
             displayBlock,
             dayStart,
           });
+          const suppressCourtOrderPickup = shouldSuppressCourtOrderPickupAfterBothDay(
+            careBlocks,
+            displayBlock,
+            dayStart,
+          );
           const display = buildDisplay(
             displayBlock,
             acceptedRequest,
             dayStart,
             nextDayStart,
             handbackPickupTime,
+            suppressCourtOrderPickup,
           );
           const isTodayDate = dayKey === format(new Date(), "yyyy-MM-dd");
           const dayStyle = display

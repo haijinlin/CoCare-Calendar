@@ -293,9 +293,21 @@ function startsHaydenNonSchoolCare(
 ) {
   if (!isHaydenNonSchoolDayAssignment(assignment)) return false;
 
-  const previous = assignments.get(key(addDays(date, -1)));
+  const previousParentRole = previousNonBothParentRole(assignments, date);
 
-  return !previous || previous.parentRole !== assignment.parentRole;
+  return previousParentRole !== assignment.parentRole;
+}
+
+function previousNonBothParentRole(assignments: Map<string, DayAssignment>, date: Date) {
+  for (let previousDate = addDays(date, -1); !isBefore(previousDate, scheduleStart); previousDate = addDays(previousDate, -1)) {
+    const previous = assignments.get(key(previousDate));
+
+    if (previous && previous.parentRole !== "BOTH") {
+      return previous.parentRole;
+    }
+  }
+
+  return null;
 }
 
 export function generateCourtOrderCareBlocks2026(options: CourtOrderScheduleOptions = {}): GeneratedCareBlock[] {
