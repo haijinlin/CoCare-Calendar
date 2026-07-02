@@ -350,7 +350,6 @@ export default async function Home({
                 day={selectedDay}
                 careBlocks={careBlocks}
                 requests={requests}
-                credits={credits}
                 expenses={expenses}
                 handoverNotes={handoverNotes}
                 specialEvents={specialEvents}

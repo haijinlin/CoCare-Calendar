@@ -4,12 +4,10 @@ import { CalendarClock, Check, DollarSign, FileText, Pencil, Plus, RotateCcw, Up
 import {
   acceptChangeRequest,
   cancelAcceptedChangeRequest,
-  cancelCareCredit,
   createHandoverNote,
   deleteDocument,
   deleteHandoverNote,
   declineChangeRequest,
-  settleCareCredit,
   uploadDocument,
   withdrawChangeRequest,
 } from "@/app/actions";
@@ -36,7 +34,6 @@ type DayDetailPanelProps = {
   day: Date | null;
   careBlocks: CareBlockWithChild[];
   requests: ChangeRequestWithDetails[];
-  credits: CareCredit[];
   expenses: ExpenseWithUser[];
   handoverNotes: HandoverNoteWithAuthor[];
   specialEvents: SpecialEventWithUsers[];
@@ -131,7 +128,6 @@ export function DayDetailPanel({
   day,
   careBlocks,
   requests,
-  credits,
   expenses,
   handoverNotes,
   specialEvents,
@@ -158,10 +154,6 @@ export function DayDetailPanel({
   const courtBlocks = blocksForDay.filter((block) => block.source === "COURT_ORDER");
   const requestsForDay = requests.filter(
     (request) => overlapsDay(request.proposedStartsAt, request.proposedEndsAt, day),
-  );
-  const requestIdsForDay = new Set(requestsForDay.map((request) => request.id));
-  const creditsForDay = credits.filter(
-    (credit) => credit.status === "OPEN" && credit.sourceRequestId && requestIdsForDay.has(credit.sourceRequestId),
   );
   const expensesForDay = expenses.filter((expense) => isSameDay(expense.incurredOn, day));
   const notesForDay = handoverNotes.filter((note) => isSameDay(note.noteDate, day));
@@ -522,39 +514,6 @@ export function DayDetailPanel({
             ) : null}
           </div>
         </div>
-
-        {creditsForDay.length > 0 ? (
-          <div>
-            <h3 className="text-xs font-semibold uppercase text-slate-500">Make-up balance</h3>
-            <div className="mt-2 space-y-2">
-              {creditsForDay.map((credit) => (
-                <div key={credit.id} className="rounded-md border border-slate-200 px-3 py-2 text-sm">
-                  <div className="font-medium text-slate-950">
-                    {parentLabels[credit.owedByRole]} owes {parentLabels[credit.owedToRole]}{" "}
-                    {formatMinutes(credit.remainingMinutes)}
-                  </div>
-                  {credit.reason ? <div className="mt-1 text-slate-600">{credit.reason}</div> : null}
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    <form action={settleCareCredit.bind(null, credit.id)}>
-                      <input type="hidden" name="returnTo" value={`${returnTo}#day-details`} />
-                      <button className="inline-flex h-8 w-full items-center justify-center gap-1 rounded-md border border-teal-200 px-2 text-xs font-medium text-teal-700 hover:bg-teal-50">
-                        <RotateCcw className="h-3.5 w-3.5" />
-                        Settled
-                      </button>
-                    </form>
-                    <form action={cancelCareCredit.bind(null, credit.id)}>
-                      <input type="hidden" name="returnTo" value={`${returnTo}#day-details`} />
-                      <button className="inline-flex h-8 w-full items-center justify-center gap-1 rounded-md border border-red-200 px-2 text-xs font-medium text-red-700 hover:bg-red-50">
-                        <X className="h-3.5 w-3.5" />
-                        Cancel
-                      </button>
-                    </form>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
 
         <div>
           <div className="flex items-center justify-between gap-3">
