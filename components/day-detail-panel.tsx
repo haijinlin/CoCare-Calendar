@@ -157,9 +157,7 @@ export function DayDetailPanel({
   const blocksForDay = careBlocks.filter((block) => overlapsDay(block.startsAt, block.endsAt, day));
   const courtBlocks = blocksForDay.filter((block) => block.source === "COURT_ORDER");
   const requestsForDay = requests.filter(
-    (request) =>
-      overlapsDay(request.proposedStartsAt, request.proposedEndsAt, day) ||
-      overlapsDay(request.careBlock.startsAt, request.careBlock.endsAt, day),
+    (request) => overlapsDay(request.proposedStartsAt, request.proposedEndsAt, day),
   );
   const requestIdsForDay = new Set(requestsForDay.map((request) => request.id));
   const creditsForDay = credits.filter(

@@ -206,6 +206,21 @@ function minutesLabel(minutes: number) {
   return parts.join(" ") || "0 hours";
 }
 
+function requestedDurationMinutes(startsAt: Date, endsAt: Date) {
+  return Math.max(0, Math.round((endsAt.getTime() - startsAt.getTime()) / 60000));
+}
+
+function requestedCreditMinutes(formData: FormData) {
+  const creditDays = Number(getString(formData, "creditDays") || "0");
+  const creditHours = Number(getString(formData, "creditHours") || "0");
+
+  if (!Number.isFinite(creditDays) || !Number.isFinite(creditHours) || creditDays < 0 || creditHours < 0) {
+    return null;
+  }
+
+  return Math.round(creditDays * 24 * 60 + creditHours * 60);
+}
+
 function durationLabel(startsAt: Date, endsAt: Date) {
   return minutesLabel(Math.max(0, Math.round((endsAt.getTime() - startsAt.getTime()) / 60000)));
 }
@@ -419,11 +434,13 @@ export async function createChangeRequest(formData: FormData) {
     redirect(withError(redirectTarget(formData), "missing-court-order-block"));
   }
 
-  const creditDays = Number(getString(formData, "creditDays") || "0");
-  const creditHours = Number(getString(formData, "creditHours") || "0");
   const creditOwedByRole = getString(formData, "creditOwedByRole");
   const creditOwedToRole = getString(formData, "creditOwedToRole");
-  const creditMinutes = Math.round(creditDays * 24 * 60 + creditHours * 60);
+  const creditMinutes = requestedCreditMinutes(formData);
+
+  if (creditMinutes === null || creditMinutes > requestedDurationMinutes(parsed.proposedStartsAt, parsed.proposedEndsAt)) {
+    redirect(withError(redirectTarget(formData), "make-up-exceeds-request"));
+  }
 
   const request = await prisma.$transaction(async (tx) => {
     const createdRequest = await tx.changeRequest.create({
@@ -521,11 +538,13 @@ export async function updateChangeRequest(id: string, formData: FormData) {
     redirect(withError(redirectTarget(formData), "missing-court-order-block"));
   }
 
-  const creditDays = Number(getString(formData, "creditDays") || "0");
-  const creditHours = Number(getString(formData, "creditHours") || "0");
   const creditOwedByRole = getString(formData, "creditOwedByRole");
   const creditOwedToRole = getString(formData, "creditOwedToRole");
-  const creditMinutes = Math.round(creditDays * 24 * 60 + creditHours * 60);
+  const creditMinutes = requestedCreditMinutes(formData);
+
+  if (creditMinutes === null || creditMinutes > requestedDurationMinutes(parsed.proposedStartsAt, parsed.proposedEndsAt)) {
+    redirect(withError(redirectTarget(formData), "make-up-exceeds-request"));
+  }
 
   await prisma.$transaction(async (tx) => {
     await tx.changeRequest.update({

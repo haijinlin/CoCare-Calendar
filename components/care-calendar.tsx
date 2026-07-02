@@ -197,9 +197,7 @@ export function CareCalendar({
             (event) => event.startsAt < nextDayStart && event.endsAt > dayStart,
           );
           const requestsForDay = changeRequests.filter(
-            (request) =>
-              (request.careBlock.startsAt < nextDayStart && request.careBlock.endsAt > dayStart) ||
-              (request.proposedStartsAt < nextDayStart && request.proposedEndsAt > dayStart),
+            (request) => request.proposedStartsAt < nextDayStart && request.proposedEndsAt > dayStart,
           );
           const pendingRequest = requestsForDay.find((request) => request.status === "PENDING");
           const acceptedRequest = requestsForDay.find((request) => request.status === "ACCEPTED");

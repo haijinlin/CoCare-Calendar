@@ -206,17 +206,12 @@ export function ChangeRequestPanel({
   const scopedRequests = requests.filter((request) => {
     if (requestScope === "all") return true;
     if (requestScope === "day") {
-      return defaultDate
-        ? overlapsDay(request.proposedStartsAt, request.proposedEndsAt, defaultDate) ||
-            overlapsDay(request.careBlock.startsAt, request.careBlock.endsAt, defaultDate)
-        : false;
+      return defaultDate ? overlapsDay(request.proposedStartsAt, request.proposedEndsAt, defaultDate) : false;
     }
 
     return (
       isSameMonth(request.proposedStartsAt, monthStart) ||
-      isSameMonth(request.proposedEndsAt, monthStart) ||
-      isSameMonth(request.careBlock.startsAt, monthStart) ||
-      isSameMonth(request.careBlock.endsAt, monthStart)
+      isSameMonth(request.proposedEndsAt, monthStart)
     );
   });
   const visibleRequests = scopedRequests.filter((request) => {
@@ -357,24 +352,32 @@ export function ChangeRequestPanel({
             </label>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-3">
-            <input
-              name="creditDays"
-              type="number"
-              min="0"
-              step="0.5"
-              placeholder="Days"
-              defaultValue={creditDays}
-              className="h-10 rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-            />
-            <input
-              name="creditHours"
-              type="number"
-              min="0"
-              step="0.5"
-              placeholder="Hours"
-              defaultValue={creditHours}
-              className="h-10 rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-            />
+            <label className="block">
+              <span className="text-xs font-medium uppercase text-slate-500">Days</span>
+              <input
+                name="creditDays"
+                type="number"
+                min="0"
+                step="0.5"
+                defaultValue={creditDays}
+                className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium uppercase text-slate-500">Hours</span>
+              <input
+                name="creditHours"
+                type="number"
+                min="0"
+                max="23"
+                step="0.5"
+                defaultValue={creditHours}
+                className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+              />
+            </label>
+          </div>
+          <div className="mt-2 text-xs text-slate-500">
+            The make-up amount cannot be greater than the requested time.
           </div>
         </div>
 

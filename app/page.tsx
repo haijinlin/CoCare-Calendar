@@ -274,6 +274,12 @@ export default async function Home({
           </div>
         ) : null}
 
+        {params?.error === "make-up-exceeds-request" ? (
+          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+            The make-up balance cannot be greater than the requested time. For one full day, enter 1 day, not 24 days.
+          </div>
+        ) : null}
+
         {params?.error === "action-not-allowed" ? (
           <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
             That action is not available for your account or for the current request status.
