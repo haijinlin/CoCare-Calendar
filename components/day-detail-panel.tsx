@@ -226,6 +226,26 @@ export function DayDetailPanel({
           </div>
         </div>
 
+        <div>
+          <h3 className="text-xs font-semibold uppercase text-slate-500">Court order schedule</h3>
+          <div className="mt-2 space-y-2">
+            {courtBlocks.map((block) => (
+              <div key={block.id} className="rounded-md bg-slate-50 px-3 py-2 text-sm">
+                <div className="font-medium text-slate-950">{parentLabels[block.parentRole]}</div>
+                <div className="text-slate-500">{timeRange(block.startsAt, block.endsAt)}</div>
+                {block.handoverNote ? (
+                  <div className="mt-1 text-slate-700">{block.handoverNote}</div>
+                ) : null}
+              </div>
+            ))}
+            {courtBlocks.length === 0 ? (
+              <div className="rounded-md border border-dashed border-slate-200 px-3 py-3 text-sm text-slate-400">
+                No court-order schedule.
+              </div>
+            ) : null}
+          </div>
+        </div>
+
         <div id="handover-notes">
           <h3 className="text-xs font-semibold uppercase text-slate-500">Handover notes</h3>
           <form action={createHandoverNote} className="mt-2 space-y-2">
@@ -395,26 +415,6 @@ export function DayDetailPanel({
             {documentsForDay.length === 0 ? (
               <div className="rounded-md border border-dashed border-slate-200 px-3 py-3 text-sm text-slate-400">
                 No documents.
-              </div>
-            ) : null}
-          </div>
-        </div>
-
-        <div>
-          <h3 className="text-xs font-semibold uppercase text-slate-500">Court order schedule</h3>
-          <div className="mt-2 space-y-2">
-            {courtBlocks.map((block) => (
-              <div key={block.id} className="rounded-md bg-slate-50 px-3 py-2 text-sm">
-                <div className="font-medium text-slate-950">{parentLabels[block.parentRole]}</div>
-                <div className="text-slate-500">{timeRange(block.startsAt, block.endsAt)}</div>
-                {block.handoverNote ? (
-                  <div className="mt-1 text-slate-700">{block.handoverNote}</div>
-                ) : null}
-              </div>
-            ))}
-            {courtBlocks.length === 0 ? (
-              <div className="rounded-md border border-dashed border-slate-200 px-3 py-3 text-sm text-slate-400">
-                No court-order schedule.
               </div>
             ) : null}
           </div>
