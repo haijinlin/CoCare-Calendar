@@ -853,7 +853,7 @@ export async function deleteHandoverNote(id: string, formData?: FormData) {
     select: { id: true, authorUserId: true, noteDate: true },
   });
 
-  if (!note) {
+  if (!note || note.authorUserId !== currentMember.userId) {
     redirect(withError(redirectTarget(formData), "action-not-allowed"));
   }
 

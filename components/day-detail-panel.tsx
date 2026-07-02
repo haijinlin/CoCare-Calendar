@@ -247,15 +247,17 @@ export function DayDetailPanel({
                   <span>
                     {note.author.name} - {format(note.createdAt, "d MMM h:mm a")}
                   </span>
-                  <form action={deleteHandoverNote.bind(null, note.id)}>
-                    <input type="hidden" name="returnTo" value={`${returnTo}#handover-notes`} />
-                    <ConfirmSubmitButton
-                      className="inline-flex h-7 items-center justify-center rounded-md border border-amber-300 px-2 font-medium text-amber-950 hover:bg-amber-100"
-                      confirmMessage="Delete this handover note?"
-                    >
-                      Delete
-                    </ConfirmSubmitButton>
-                  </form>
+                  {note.authorUserId === currentUserId ? (
+                    <form action={deleteHandoverNote.bind(null, note.id)}>
+                      <input type="hidden" name="returnTo" value={`${returnTo}#handover-notes`} />
+                      <ConfirmSubmitButton
+                        className="inline-flex h-7 items-center justify-center rounded-md border border-amber-300 px-2 font-medium text-amber-950 hover:bg-amber-100"
+                        confirmMessage="Delete this handover note?"
+                      >
+                        Delete
+                      </ConfirmSubmitButton>
+                    </form>
+                  ) : null}
                 </div>
               </div>
             ))}
