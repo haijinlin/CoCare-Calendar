@@ -470,11 +470,13 @@ export async function createChangeRequest(formData: FormData) {
       await tx.careCredit.create({
         data: {
           familyId: DEMO_FAMILY_ID,
+          requestedById: currentMember.userId,
           owedByRole: creditOwedByRole,
           owedToRole: creditOwedToRole,
           minutes: creditMinutes,
           remainingMinutes: creditMinutes,
           reason: parsed.reason,
+          status: "PENDING",
           sourceRequestId: createdRequest.id,
         },
       });
@@ -566,7 +568,7 @@ export async function updateChangeRequest(id: string, formData: FormData) {
     });
 
     await tx.careCredit.updateMany({
-      where: { familyId: DEMO_FAMILY_ID, sourceRequestId: id, status: "OPEN" },
+      where: { familyId: DEMO_FAMILY_ID, sourceRequestId: id, status: { in: ["PENDING", "OPEN"] } },
       data: { status: "CANCELLED" },
     });
 
@@ -579,11 +581,13 @@ export async function updateChangeRequest(id: string, formData: FormData) {
       await tx.careCredit.create({
         data: {
           familyId: DEMO_FAMILY_ID,
+          requestedById: currentMember.userId,
           owedByRole: creditOwedByRole,
           owedToRole: creditOwedToRole,
           minutes: creditMinutes,
           remainingMinutes: creditMinutes,
           reason: parsed.reason,
+          status: "PENDING",
           sourceRequestId: id,
         },
       });
@@ -610,9 +614,18 @@ export async function acceptChangeRequest(id: string, formData: FormData) {
     redirect(withError(redirectTarget(formData), "action-not-allowed"));
   }
 
-  const updatedRequest = await prisma.changeRequest.update({
-    where: { id: request.id },
-    data: { status: "ACCEPTED", respondedById: currentMember.userId },
+  const updatedRequest = await prisma.$transaction(async (tx) => {
+    const acceptedRequest = await tx.changeRequest.update({
+      where: { id: request.id },
+      data: { status: "ACCEPTED", respondedById: currentMember.userId },
+    });
+
+    await tx.careCredit.updateMany({
+      where: { familyId: DEMO_FAMILY_ID, sourceRequestId: request.id, status: "PENDING" },
+      data: { status: "OPEN", respondedById: currentMember.userId },
+    });
+
+    return acceptedRequest;
   });
 
   await sendNotificationEmail({
@@ -662,7 +675,7 @@ export async function cancelAcceptedChangeRequest(id: string, formData: FormData
     });
 
     await tx.careCredit.updateMany({
-      where: { familyId: DEMO_FAMILY_ID, sourceRequestId: id, status: "OPEN" },
+      where: { familyId: DEMO_FAMILY_ID, sourceRequestId: id, status: { in: ["PENDING", "OPEN"] } },
       data: { status: "CANCELLED" },
     });
 
@@ -715,7 +728,7 @@ export async function withdrawChangeRequest(id: string, formData?: FormData) {
     });
 
     await tx.careCredit.updateMany({
-      where: { familyId: DEMO_FAMILY_ID, sourceRequestId: id, status: "OPEN" },
+      where: { familyId: DEMO_FAMILY_ID, sourceRequestId: id, status: { in: ["PENDING", "OPEN"] } },
       data: { status: "CANCELLED" },
     });
   });
@@ -751,7 +764,7 @@ export async function declineChangeRequest(id: string, formData: FormData) {
     });
 
     await tx.careCredit.updateMany({
-      where: { familyId: DEMO_FAMILY_ID, sourceRequestId: id, status: "OPEN" },
+      where: { familyId: DEMO_FAMILY_ID, sourceRequestId: id, status: { in: ["PENDING", "OPEN"] } },
       data: { status: "CANCELLED" },
     });
 
@@ -937,11 +950,13 @@ export async function createCareCredit(formData: FormData) {
   const credit = await prisma.careCredit.create({
     data: {
       familyId: DEMO_FAMILY_ID,
+      requestedById: currentMember.userId,
       owedByRole: parsed.owedByRole,
       owedToRole: parsed.owedToRole,
       minutes,
       remainingMinutes: minutes,
       reason: parsed.reason,
+      status: "PENDING",
     },
   });
   await recordAuditLog({
@@ -949,7 +964,39 @@ export async function createCareCredit(formData: FormData) {
     action: "CREATE",
     entityType: "CareCredit",
     entityId: credit.id,
-    summary: `Added make-up balance: ${parentRoleLabel(credit.owedByRole)} owes ${parentRoleLabel(credit.owedToRole)} ${minutesLabel(credit.minutes)}.`,
+    summary: `Requested make-up balance: ${parentRoleLabel(credit.owedByRole)} owes ${parentRoleLabel(credit.owedToRole)} ${minutesLabel(credit.minutes)}.`,
+  });
+
+  revalidatePath("/");
+  redirect(redirectTarget(formData));
+}
+
+export async function approveCareCredit(id: string, formData?: FormData) {
+  const currentMember = await requireCurrentFamilyMember();
+  const credit = await prisma.careCredit.findFirst({
+    where: {
+      id,
+      familyId: DEMO_FAMILY_ID,
+      status: "PENDING",
+      sourceRequestId: null,
+      requestedById: { not: currentMember.userId },
+    },
+  });
+
+  if (!credit) {
+    redirect(withError(redirectTarget(formData), "action-not-allowed"));
+  }
+
+  const approvedCredit = await prisma.careCredit.update({
+    where: { id: credit.id, familyId: DEMO_FAMILY_ID },
+    data: { status: "OPEN", respondedById: currentMember.userId },
+  });
+  await recordAuditLog({
+    actorUserId: currentMember.userId,
+    action: "APPROVE",
+    entityType: "CareCredit",
+    entityId: approvedCredit.id,
+    summary: `Approved make-up balance: ${parentRoleLabel(approvedCredit.owedByRole)} owes ${parentRoleLabel(approvedCredit.owedToRole)} ${minutesLabel(approvedCredit.minutes)}.`,
   });
 
   revalidatePath("/");
@@ -958,8 +1005,16 @@ export async function createCareCredit(formData: FormData) {
 
 export async function settleCareCredit(id: string, formData?: FormData) {
   const currentMember = await requireCurrentFamilyMember();
+  const existingCredit = await prisma.careCredit.findFirst({
+    where: { id, familyId: DEMO_FAMILY_ID, status: "OPEN", owedToRole: currentMember.role },
+  });
+
+  if (!existingCredit) {
+    redirect(withError(redirectTarget(formData), "action-not-allowed"));
+  }
+
   const credit = await prisma.careCredit.update({
-    where: { id, familyId: DEMO_FAMILY_ID },
+    where: { id: existingCredit.id, familyId: DEMO_FAMILY_ID },
     data: { status: "SETTLED", remainingMinutes: 0 },
   });
   await recordAuditLog({
@@ -976,8 +1031,23 @@ export async function settleCareCredit(id: string, formData?: FormData) {
 
 export async function cancelCareCredit(id: string, formData?: FormData) {
   const currentMember = await requireCurrentFamilyMember();
+  const existingCredit = await prisma.careCredit.findFirst({
+    where: {
+      id,
+      familyId: DEMO_FAMILY_ID,
+      OR: [
+        { status: "OPEN", owedToRole: currentMember.role },
+        { status: "PENDING", sourceRequestId: null, requestedById: currentMember.userId },
+      ],
+    },
+  });
+
+  if (!existingCredit) {
+    redirect(withError(redirectTarget(formData), "action-not-allowed"));
+  }
+
   const credit = await prisma.careCredit.update({
-    where: { id, familyId: DEMO_FAMILY_ID },
+    where: { id: existingCredit.id, familyId: DEMO_FAMILY_ID },
     data: { status: "CANCELLED" },
   });
   await recordAuditLog({

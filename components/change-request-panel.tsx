@@ -127,7 +127,7 @@ function formatMinutes(minutes: number) {
 
 function creditSummary(credits: CareCredit[] | undefined, parentLabels: ParentLabels) {
   const activeCredits = (credits ?? []).filter(
-    (credit) => credit.status === "OPEN" || credit.status === "SETTLED",
+    (credit) => credit.status === "PENDING" || credit.status === "OPEN" || credit.status === "SETTLED",
   );
 
   if (activeCredits.length === 0) return null;
@@ -137,7 +137,13 @@ function creditSummary(credits: CareCredit[] | undefined, parentLabels: ParentLa
       (credit) =>
         `${parentLabels[credit.owedByRole]} owes ${parentLabels[credit.owedToRole]} ${formatMinutes(
           credit.remainingMinutes,
-        )}${credit.status === "SETTLED" ? " (settled)" : ""}`,
+        )}${
+          credit.status === "PENDING"
+            ? " (pending)"
+            : credit.status === "SETTLED"
+              ? " (settled)"
+              : ""
+        }`,
     )
     .join("; ");
 }

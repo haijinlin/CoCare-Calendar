@@ -45,6 +45,8 @@ model User {
   specialEventsInvited   SpecialEvent[]  @relation("SpecialEventInvitee")
   specialEventsResponded SpecialEvent[]  @relation("SpecialEventRespondedBy")
   documentsUploaded    Document[]      @relation("DocumentUploadedBy")
+  careCreditsRequested CareCredit[]     @relation("CareCreditRequestedBy")
+  careCreditsResponded CareCredit[]     @relation("CareCreditRespondedBy")
   auditLogs             AuditLog[]
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
@@ -138,6 +140,8 @@ model ChangeRequest {
 model CareCredit {
   id                String        @id @default(cuid())
   familyId          String
+  requestedById     String?
+  respondedById     String?
   owedByRole        ParentRole
   owedToRole        ParentRole
   minutes           Int
@@ -146,11 +150,14 @@ model CareCredit {
   status            String        @default("OPEN")
   sourceRequestId   String?
   family            Family        @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  requestedBy       User?         @relation("CareCreditRequestedBy", fields: [requestedById], references: [id], onDelete: SetNull)
+  respondedBy       User?         @relation("CareCreditRespondedBy", fields: [respondedById], references: [id], onDelete: SetNull)
   sourceRequest     ChangeRequest? @relation(fields: [sourceRequestId], references: [id], onDelete: SetNull)
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
   @@index([familyId, status])
+  @@index([requestedById, createdAt])
   @@index([owedByRole, owedToRole])
 }
 

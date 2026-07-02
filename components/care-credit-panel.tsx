@@ -1,11 +1,13 @@
 import { CareCredit } from "@prisma/client";
-import { Clock, RotateCcw, X } from "lucide-react";
-import { cancelCareCredit, createCareCredit, settleCareCredit } from "@/app/actions";
+import { Check, Clock, RotateCcw, X } from "lucide-react";
+import { approveCareCredit, cancelCareCredit, createCareCredit, settleCareCredit } from "@/app/actions";
 import { ParentLabels } from "@/lib/parents";
 
 type CareCreditPanelProps = {
   credits: CareCredit[];
   parentLabels: ParentLabels;
+  currentUserId: string;
+  currentUserRole: CareCredit["owedByRole"];
   returnTo: string;
 };
 
@@ -20,8 +22,17 @@ function formatMinutes(minutes: number) {
   return parts.length > 0 ? parts.join(" ") : "0h";
 }
 
-export function CareCreditPanel({ credits, parentLabels, returnTo }: CareCreditPanelProps) {
+export function CareCreditPanel({
+  credits,
+  parentLabels,
+  currentUserId,
+  currentUserRole,
+  returnTo,
+}: CareCreditPanelProps) {
   const openCredits = credits.filter((credit) => credit.status === "OPEN");
+  const pendingManualCredits = credits.filter(
+    (credit) => credit.status === "PENDING" && !credit.sourceRequestId,
+  );
   const haydenOwes = openCredits
     .filter((credit) => credit.owedByRole === "PARENT_A")
     .reduce((sum, credit) => sum + credit.remainingMinutes, 0);
@@ -46,6 +57,13 @@ export function CareCreditPanel({ credits, parentLabels, returnTo }: CareCreditP
           <span className="font-semibold">{formatMinutes(constanceOwes)}</span>
         </div>
       </div>
+
+      {pendingManualCredits.length > 0 ? (
+        <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          {pendingManualCredits.length} manual make-up request
+          {pendingManualCredits.length === 1 ? "" : "s"} waiting for approval.
+        </div>
+      ) : null}
 
       <form action={createCareCredit} className="mt-4 space-y-3">
         <input type="hidden" name="returnTo" value={returnTo} />
@@ -98,36 +116,79 @@ export function CareCreditPanel({ credits, parentLabels, returnTo }: CareCreditP
           className="w-full resize-none rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
         />
         <button className="h-10 w-full rounded-md bg-slate-950 px-4 text-sm font-medium text-white hover:bg-slate-800">
-          Add balance
+          Request balance
         </button>
+        <p className="text-xs text-slate-500">Manual balances need the other parent's approval before they count.</p>
       </form>
 
       <div className="mt-4 space-y-3">
-        {openCredits.slice(0, 5).map((credit) => (
+        {[...pendingManualCredits, ...openCredits].slice(0, 6).map((credit) => {
+          const isPending = credit.status === "PENDING";
+          const canApprove = isPending && credit.requestedById !== currentUserId;
+          const canWithdraw = isPending && credit.requestedById === currentUserId;
+          const canManageOpen = credit.status === "OPEN" && credit.owedToRole === currentUserRole;
+
+          return (
           <div key={credit.id} className="rounded-md border border-slate-200 p-3 text-sm">
-            <div className="font-medium text-slate-950">
-              {parentLabels[credit.owedByRole]} owes {parentLabels[credit.owedToRole]}{" "}
-              {formatMinutes(credit.remainingMinutes)}
+            <div className="flex items-start justify-between gap-3">
+              <div className="font-medium text-slate-950">
+                {parentLabels[credit.owedByRole]} owes {parentLabels[credit.owedToRole]}{" "}
+                {formatMinutes(credit.remainingMinutes)}
+              </div>
+              <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
+                {credit.status.toLowerCase()}
+              </span>
             </div>
             {credit.reason ? <div className="mt-1 text-slate-600">{credit.reason}</div> : null}
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <form action={settleCareCredit.bind(null, credit.id)}>
-                <input type="hidden" name="returnTo" value={returnTo} />
-                <button className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-teal-200 px-3 text-sm font-medium text-teal-700 hover:bg-teal-50">
-                  <RotateCcw className="h-4 w-4" />
-                  Settled
-                </button>
-              </form>
-              <form action={cancelCareCredit.bind(null, credit.id)}>
-                <input type="hidden" name="returnTo" value={returnTo} />
-                <button className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-red-200 px-3 text-sm font-medium text-red-700 hover:bg-red-50">
-                  <X className="h-4 w-4" />
-                  Cancel
-                </button>
-              </form>
-            </div>
+            {canApprove || canWithdraw || canManageOpen ? (
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {canApprove ? (
+                  <form action={approveCareCredit.bind(null, credit.id)}>
+                    <input type="hidden" name="returnTo" value={returnTo} />
+                    <button className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-teal-200 px-3 text-sm font-medium text-teal-700 hover:bg-teal-50">
+                      <Check className="h-4 w-4" />
+                      Approve
+                    </button>
+                  </form>
+                ) : null}
+                {canWithdraw ? (
+                  <form action={cancelCareCredit.bind(null, credit.id)}>
+                    <input type="hidden" name="returnTo" value={returnTo} />
+                    <button className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                      <RotateCcw className="h-4 w-4" />
+                      Withdraw
+                    </button>
+                  </form>
+                ) : null}
+                {canManageOpen ? (
+                  <>
+                    <form action={settleCareCredit.bind(null, credit.id)}>
+                      <input type="hidden" name="returnTo" value={returnTo} />
+                      <button className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-teal-200 px-3 text-sm font-medium text-teal-700 hover:bg-teal-50">
+                        <RotateCcw className="h-4 w-4" />
+                        Settled
+                      </button>
+                    </form>
+                    <form action={cancelCareCredit.bind(null, credit.id)}>
+                      <input type="hidden" name="returnTo" value={returnTo} />
+                      <button className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-red-200 px-3 text-sm font-medium text-red-700 hover:bg-red-50">
+                        <X className="h-4 w-4" />
+                        Cancel
+                      </button>
+                    </form>
+                  </>
+                ) : null}
+              </div>
+            ) : (
+              <div className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                {isPending
+                  ? "Waiting for the other parent to approve."
+                  : `Only ${parentLabels[credit.owedToRole]} can settle or cancel this balance.`}
+              </div>
+            )}
           </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

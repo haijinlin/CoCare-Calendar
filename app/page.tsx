@@ -117,6 +117,9 @@ export default async function Home({
   const openPanel = params?.open;
   const documentUploadEnabled = Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
   const openCreditCount = credits.filter((credit) => credit.status === "OPEN").length;
+  const pendingManualCreditCount = credits.filter(
+    (credit) => credit.status === "PENDING" && !credit.sourceRequestId,
+  ).length;
   const pendingRequestCount = requests.filter((request) => request.status === "PENDING").length;
   const pendingEventCount = specialEvents.filter((event) => event.status === "PENDING").length;
   const openExpenseCents = expenses
@@ -409,10 +412,20 @@ export default async function Home({
             </CollapsiblePanel>
             <CollapsiblePanel
               title="Make-up balance"
-              summary={`${openCreditCount} open`}
-              defaultOpen={openCreditCount > 0}
+              summary={
+                pendingManualCreditCount > 0
+                  ? `${openCreditCount} open · ${pendingManualCreditCount} pending`
+                  : `${openCreditCount} open`
+              }
+              defaultOpen={openCreditCount > 0 || pendingManualCreditCount > 0 || openPanel === "careCredits"}
             >
-              <CareCreditPanel credits={credits} parentLabels={parentLabels} returnTo={returnTo} />
+              <CareCreditPanel
+                credits={credits}
+                parentLabels={parentLabels}
+                currentUserId={currentMember.userId}
+                currentUserRole={currentMember.role}
+                returnTo={returnTo}
+              />
             </CollapsiblePanel>
             <CollapsiblePanel
               title="Expenses"
