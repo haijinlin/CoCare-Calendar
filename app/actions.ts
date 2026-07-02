@@ -221,6 +221,12 @@ function requestedCreditMinutes(formData: FormData) {
   return Math.round(creditDays * 24 * 60 + creditHours * 60);
 }
 
+function creditExceedsRequestedTime(creditMinutes: number, startsAt: Date, endsAt: Date) {
+  // End-of-day inputs render as 11:59 PM, which is 1439 minutes.
+  // Treat that as a full day for make-up balance validation.
+  return creditMinutes > requestedDurationMinutes(startsAt, endsAt) + 1;
+}
+
 function durationLabel(startsAt: Date, endsAt: Date) {
   return minutesLabel(Math.max(0, Math.round((endsAt.getTime() - startsAt.getTime()) / 60000)));
 }
@@ -438,7 +444,7 @@ export async function createChangeRequest(formData: FormData) {
   const creditOwedToRole = getString(formData, "creditOwedToRole");
   const creditMinutes = requestedCreditMinutes(formData);
 
-  if (creditMinutes === null || creditMinutes > requestedDurationMinutes(parsed.proposedStartsAt, parsed.proposedEndsAt)) {
+  if (creditMinutes === null || creditExceedsRequestedTime(creditMinutes, parsed.proposedStartsAt, parsed.proposedEndsAt)) {
     redirect(withError(redirectTarget(formData), "make-up-exceeds-request"));
   }
 
@@ -542,7 +548,7 @@ export async function updateChangeRequest(id: string, formData: FormData) {
   const creditOwedToRole = getString(formData, "creditOwedToRole");
   const creditMinutes = requestedCreditMinutes(formData);
 
-  if (creditMinutes === null || creditMinutes > requestedDurationMinutes(parsed.proposedStartsAt, parsed.proposedEndsAt)) {
+  if (creditMinutes === null || creditExceedsRequestedTime(creditMinutes, parsed.proposedStartsAt, parsed.proposedEndsAt)) {
     redirect(withError(redirectTarget(formData), "make-up-exceeds-request"));
   }
 
