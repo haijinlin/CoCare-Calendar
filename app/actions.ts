@@ -1206,38 +1206,53 @@ export async function uploadDocument(formData: FormData) {
     redirect(withError(redirectTarget(formData), "document-type-not-supported"));
   }
 
-  const pathname = [
-    "documents",
-    DEMO_FAMILY_ID,
-    localDateKey(documentDate),
-    `${Date.now()}-${safeFileName(file.name || "document")}`,
-  ].join("/");
-  const blob = await put(pathname, file, {
-    access: "private",
-    addRandomSuffix: true,
-  });
+  try {
+    const pathname = [
+      "documents",
+      DEMO_FAMILY_ID,
+      localDateKey(documentDate),
+      `${Date.now()}-${safeFileName(file.name || "document")}`,
+    ].join("/");
+    const blob = await put(pathname, file, {
+      access: "private",
+      addRandomSuffix: true,
+    });
 
-  const document = await prisma.document.create({
-    data: {
-      familyId: DEMO_FAMILY_ID,
-      uploadedById: currentMember.userId,
-      documentDate,
-      title,
-      fileName: file.name || "document",
-      contentType: file.type || "application/octet-stream",
-      sizeBytes: file.size,
-      blobPathname: blob.pathname,
-      notes,
-    },
-  });
+    try {
+      const document = await prisma.document.create({
+        data: {
+          familyId: DEMO_FAMILY_ID,
+          uploadedById: currentMember.userId,
+          documentDate,
+          title,
+          fileName: file.name || "document",
+          contentType: file.type || "application/octet-stream",
+          sizeBytes: file.size,
+          blobPathname: blob.pathname,
+          notes,
+        },
+      });
 
-  await recordAuditLog({
-    actorUserId: currentMember.userId,
-    action: "CREATE",
-    entityType: "Document",
-    entityId: document.id,
-    summary: `Uploaded document "${document.title}" for ${localDateKey(document.documentDate)}.`,
-  });
+      await recordAuditLog({
+        actorUserId: currentMember.userId,
+        action: "CREATE",
+        entityType: "Document",
+        entityId: document.id,
+        summary: `Uploaded document "${document.title}" for ${localDateKey(document.documentDate)}.`,
+      });
+    } catch (error) {
+      console.error("[document metadata create failed]", error);
+      try {
+        await del(blob.pathname);
+      } catch (deleteError) {
+        console.error("[orphan blob cleanup failed]", deleteError);
+      }
+      redirect(withError(redirectTarget(formData), "document-upload-failed"));
+    }
+  } catch (error) {
+    console.error("[document upload failed]", error);
+    redirect(withError(redirectTarget(formData), "document-upload-failed"));
+  }
 
   revalidatePath("/");
   redirect(redirectTarget(formData));

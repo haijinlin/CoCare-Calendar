@@ -310,6 +310,12 @@ export default async function Home({
           </div>
         ) : null}
 
+        {params?.error === "document-upload-failed" ? (
+          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+            Document upload failed. Check that Neon migrations are up to date and the private Vercel Blob store is connected.
+          </div>
+        ) : null}
+
         {!hasSchoolHolidayData ? (
           <div className="rounded-md border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-950">
             VIC school holiday dates are not configured for {selectedYear} yet. Default care,
