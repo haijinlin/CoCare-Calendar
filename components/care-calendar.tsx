@@ -116,6 +116,7 @@ function buildDisplay(
   acceptedRequest: CalendarChangeRequest | undefined,
   dayStart: Date,
   nextDayStart: Date,
+  handbackPickupTime?: Date,
 ): CalendarDisplay | null {
   if (!displayBlock && !acceptedRequest) return null;
 
@@ -148,13 +149,48 @@ function buildDisplay(
     parentRole: displayBlock.parentRole,
     note: displayBlock.handoverNote,
     isPickupDay:
-      blockStartsDuringDay &&
-      (displayBlock.handoverNote?.includes("pickup from school") ||
-        isMorningHaydenPickup(displayBlock)),
+      Boolean(handbackPickupTime) ||
+      (blockStartsDuringDay &&
+        (displayBlock.handoverNote?.includes("pickup from school") ||
+          isMorningHaydenPickup(displayBlock))),
     isPublicHoliday: displayBlock.handoverNote?.includes("public holiday") ?? false,
     changedByAgreement: false,
-    pickupTime: displayBlock.startsAt,
+    pickupTime: handbackPickupTime ?? displayBlock.startsAt,
   };
+}
+
+function endsAtPreviousMidnightBoundary(requestEnd: Date, dayStart: Date) {
+  const minutesBeforeDayStart = (dayStart.getTime() - requestEnd.getTime()) / 60000;
+
+  return minutesBeforeDayStart >= 0 && minutesBeforeDayStart <= 2;
+}
+
+function handbackPickupTimeAfterAcceptedChange({
+  changeRequests,
+  displayBlock,
+  dayStart,
+}: {
+  changeRequests: CalendarChangeRequest[];
+  displayBlock: CalendarCareBlock | undefined;
+  dayStart: Date;
+}) {
+  if (!displayBlock || displayBlock.parentRole !== "PARENT_A" || !isMorningHaydenPickup(displayBlock)) {
+    return undefined;
+  }
+
+  const previousAcceptedChange = changeRequests.find(
+    (request) =>
+      request.status === "ACCEPTED" &&
+      request.proposedParentRole === "PARENT_B" &&
+      endsAtPreviousMidnightBoundary(request.proposedEndsAt, dayStart),
+  );
+
+  if (!previousAcceptedChange) return undefined;
+
+  const pickupTime = new Date(dayStart);
+  pickupTime.setHours(9, 30, 0, 0);
+
+  return pickupTime;
 }
 
 export function CareCalendar({
@@ -205,7 +241,18 @@ export function CareCalendar({
             .filter((block) => block.source === "COURT_ORDER")
             .toSorted((a, b) => blockScore(b) - blockScore(a))[0];
           const calendarMarker = pendingRequest ?? acceptedRequest;
-          const display = buildDisplay(displayBlock, acceptedRequest, dayStart, nextDayStart);
+          const handbackPickupTime = handbackPickupTimeAfterAcceptedChange({
+            changeRequests,
+            displayBlock,
+            dayStart,
+          });
+          const display = buildDisplay(
+            displayBlock,
+            acceptedRequest,
+            dayStart,
+            nextDayStart,
+            handbackPickupTime,
+          );
           const isTodayDate = dayKey === format(new Date(), "yyyy-MM-dd");
           const dayStyle = display
             ? display.isPickupDay
