@@ -264,7 +264,10 @@ export function CareCalendar({
             note.noteDate >= dayStart && note.noteDate < nextDayStart,
           );
           const eventsForDay = specialEvents.filter(
-            (event) => event.startsAt < nextDayStart && event.endsAt > dayStart,
+            (event) =>
+              (event.status === "PENDING" || event.status === "ACCEPTED") &&
+              event.startsAt < nextDayStart &&
+              event.endsAt > dayStart,
           );
           const requestsForDay = changeRequests.filter(
             (request) => request.proposedStartsAt < nextDayStart && request.proposedEndsAt > dayStart,

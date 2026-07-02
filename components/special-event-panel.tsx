@@ -154,7 +154,7 @@ function EventCard({
   const canRespond = event.status === "PENDING" && isInvitee;
   const canCancel =
     (event.status === "PENDING" || event.status === "ACCEPTED") &&
-    (event.organizerUserId === currentUserId || event.inviteeUserId === currentUserId);
+    event.organizerUserId === currentUserId;
 
   return (
     <div

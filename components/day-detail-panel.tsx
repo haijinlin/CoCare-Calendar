@@ -163,7 +163,11 @@ export function DayDetailPanel({
   );
   const expensesForDay = expenses.filter((expense) => isSameDay(expense.incurredOn, day));
   const notesForDay = handoverNotes.filter((note) => isSameDay(note.noteDate, day));
-  const eventsForDay = specialEvents.filter((event) => overlapsDay(event.startsAt, event.endsAt, day));
+  const eventsForDay = specialEvents.filter(
+    (event) =>
+      (event.status === "PENDING" || event.status === "ACCEPTED") &&
+      overlapsDay(event.startsAt, event.endsAt, day),
+  );
   const documentsForDay = documents.filter((document) => isSameDay(document.documentDate, day));
   const openExpenseTotal = expensesForDay
     .filter((expense) => expense.status === "OPEN")

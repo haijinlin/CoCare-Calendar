@@ -1221,7 +1221,7 @@ export async function cancelSpecialEvent(id: string, formData: FormData) {
       id,
       familyId: DEMO_FAMILY_ID,
       status: { in: ["PENDING", "ACCEPTED"] },
-      OR: [{ organizerUserId: currentMember.userId }, { inviteeUserId: currentMember.userId }],
+      organizerUserId: currentMember.userId,
     },
     include: { organizer: true, invitee: true },
   });
