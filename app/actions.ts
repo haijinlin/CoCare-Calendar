@@ -1,5 +1,6 @@
 "use server";
 
+import { del, put } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
@@ -31,6 +32,11 @@ function getString(formData: FormData, key: string) {
   return typeof value === "string" ? value : "";
 }
 
+function getFile(formData: FormData, key: string) {
+  const value = formData.get(key);
+  return value instanceof File ? value : null;
+}
+
 function redirectTarget(formData?: FormData) {
   if (!formData) return "/";
 
@@ -44,6 +50,17 @@ function withError(target: string, error: string) {
   const [pathAndQuery, hash] = target.split("#", 2);
   const separator = pathAndQuery.includes("?") ? "&" : "?";
   return `${pathAndQuery}${separator}error=${error}${hash ? `#${hash}` : ""}`;
+}
+
+function blobUploadConfigured() {
+  return Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
+}
+
+function safeFileName(value: string) {
+  return value
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/-+/g, "-")
+    .slice(0, 120);
 }
 
 async function findCareBlockForChangeRequest(careBlockId: string | undefined, proposedStartsAt: Date) {
@@ -1151,6 +1168,105 @@ export async function cancelSpecialEvent(id: string, formData: FormData) {
     ]
       .filter(Boolean)
       .join("\n"),
+  });
+
+  revalidatePath("/");
+  redirect(redirectTarget(formData));
+}
+
+export async function uploadDocument(formData: FormData) {
+  const currentMember = await requireCurrentFamilyMember();
+  const documentDate = new Date(`${getString(formData, "documentDate")}T00:00:00`);
+  const title = getString(formData, "title").trim();
+  const notes = getString(formData, "notes").trim() || null;
+  const file = getFile(formData, "file");
+  const allowedTypes = new Set([
+    "application/pdf",
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/heic",
+    "image/heif",
+  ]);
+  const maxSizeBytes = 10 * 1024 * 1024;
+
+  if (!blobUploadConfigured()) {
+    redirect(withError(redirectTarget(formData), "file-upload-not-configured"));
+  }
+
+  if (!title || Number.isNaN(documentDate.getTime()) || !file || file.size === 0) {
+    redirect(withError(redirectTarget(formData), "invalid-document"));
+  }
+
+  if (file.size > maxSizeBytes) {
+    redirect(withError(redirectTarget(formData), "document-too-large"));
+  }
+
+  if (file.type && !allowedTypes.has(file.type)) {
+    redirect(withError(redirectTarget(formData), "document-type-not-supported"));
+  }
+
+  const pathname = [
+    "documents",
+    DEMO_FAMILY_ID,
+    localDateKey(documentDate),
+    `${Date.now()}-${safeFileName(file.name || "document")}`,
+  ].join("/");
+  const blob = await put(pathname, file, {
+    access: "private",
+    addRandomSuffix: true,
+  });
+
+  const document = await prisma.document.create({
+    data: {
+      familyId: DEMO_FAMILY_ID,
+      uploadedById: currentMember.userId,
+      documentDate,
+      title,
+      fileName: file.name || "document",
+      contentType: file.type || "application/octet-stream",
+      sizeBytes: file.size,
+      blobPathname: blob.pathname,
+      notes,
+    },
+  });
+
+  await recordAuditLog({
+    actorUserId: currentMember.userId,
+    action: "CREATE",
+    entityType: "Document",
+    entityId: document.id,
+    summary: `Uploaded document "${document.title}" for ${localDateKey(document.documentDate)}.`,
+  });
+
+  revalidatePath("/");
+  redirect(redirectTarget(formData));
+}
+
+export async function deleteDocument(id: string, formData?: FormData) {
+  const currentMember = await requireCurrentFamilyMember();
+  const document = await prisma.document.findFirst({
+    where: { id, familyId: DEMO_FAMILY_ID, uploadedById: currentMember.userId },
+  });
+
+  if (!document) {
+    redirect(withError(redirectTarget(formData), "action-not-allowed"));
+  }
+
+  await prisma.document.delete({ where: { id: document.id } });
+
+  try {
+    await del(document.blobPathname);
+  } catch (error) {
+    console.error("[blob delete failed]", error);
+  }
+
+  await recordAuditLog({
+    actorUserId: currentMember.userId,
+    action: "DELETE",
+    entityType: "Document",
+    entityId: document.id,
+    summary: `Deleted document "${document.title}" for ${localDateKey(document.documentDate)}.`,
   });
 
   revalidatePath("/");

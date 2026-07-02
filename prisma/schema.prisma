@@ -44,6 +44,7 @@ model User {
   specialEventsOrganized SpecialEvent[]  @relation("SpecialEventOrganizer")
   specialEventsInvited   SpecialEvent[]  @relation("SpecialEventInvitee")
   specialEventsResponded SpecialEvent[]  @relation("SpecialEventRespondedBy")
+  documentsUploaded    Document[]      @relation("DocumentUploadedBy")
   auditLogs             AuditLog[]
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
@@ -60,6 +61,7 @@ model Family {
   expenses       Expense[]
   handoverNotes  HandoverNote[]
   specialEvents  SpecialEvent[]
+  documents      Document[]
   schoolHolidays SchoolHolidayPeriod[]
   publicHolidays PublicHolidayRule[]
   auditLogs      AuditLog[]
@@ -208,6 +210,26 @@ model SpecialEvent {
   @@index([familyId, startsAt, endsAt])
   @@index([organizerUserId, createdAt])
   @@index([inviteeUserId, createdAt])
+}
+
+model Document {
+  id             String   @id @default(cuid())
+  familyId       String
+  uploadedById   String
+  documentDate   DateTime
+  title          String
+  fileName       String
+  contentType    String
+  sizeBytes      Int
+  blobPathname   String
+  notes          String?
+  family         Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  uploadedBy     User     @relation("DocumentUploadedBy", fields: [uploadedById], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([familyId, documentDate])
+  @@index([uploadedById, createdAt])
 }
 
 model SchoolHolidayPeriod {

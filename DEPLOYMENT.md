@@ -59,6 +59,10 @@ FAMILY_NAME=CoCare Family
 RESEND_API_KEY=
 EMAIL_FROM=CoCare Calendar <notifications@your-domain.com>
 APP_BASE_URL=https://your-domain.vercel.app
+
+# Optional document uploads.
+BLOB_READ_WRITE_TOKEN=
+BLOB_STORE_ID=
 ```
 
 Notes:
@@ -70,6 +74,7 @@ Notes:
 - `CONSTANCE_GOOGLE_EMAIL` maps to Constance / `PARENT_B`.
 - `EMAIL_FROM` should use a Resend verified sender domain for production.
 - `onboarding@resend.dev` can be used for limited testing, but it is not the final production sender.
+- Document uploads use a private Vercel Blob store. If Blob is not configured, the app still works but upload is disabled.
 
 ## 5. Google OAuth Production Setup
 
@@ -196,6 +201,19 @@ This page checks:
 - sender email
 - app base URL
 
+### Optional Vercel Blob Setup
+
+Use this only if you want PDF/photo uploads:
+
+1. In Vercel, open the project.
+2. Go to `Storage`.
+3. Create or connect a `Blob` store.
+4. Choose `Private` access for family documents.
+5. Connect the Blob store to this project so Vercel injects Blob environment variables.
+6. Redeploy the project.
+
+The Documents upload form is hidden until Blob is configured.
+
 You can also check the JSON endpoint:
 
 ```text
@@ -232,6 +250,9 @@ Test these before relying on the production app:
 - Email notification is received.
 - Make-up balance appears when a request records owed time.
 - Expense can be added and shown.
+- Special event invitations can be created and accepted/declined.
+- Document upload is hidden if Blob is not configured.
+- If Blob is configured, a PDF/image can be uploaded and opened from Day details.
 - Rules & holidays page loads.
 - Holiday rules can be applied to calendar.
 - Activity page loads.

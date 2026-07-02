@@ -1,14 +1,16 @@
-import { CareBlock, CareCredit, ChangeRequest, Child, Expense, HandoverNote, SpecialEvent, User } from "@prisma/client";
+import { CareBlock, CareCredit, ChangeRequest, Child, Document, Expense, HandoverNote, SpecialEvent, User } from "@prisma/client";
 import { format, isSameDay } from "date-fns";
-import { CalendarClock, Check, DollarSign, Pencil, Plus, RotateCcw, X } from "lucide-react";
+import { CalendarClock, Check, DollarSign, FileText, Pencil, Plus, RotateCcw, Upload, X } from "lucide-react";
 import {
   acceptChangeRequest,
   cancelAcceptedChangeRequest,
   cancelCareCredit,
   createHandoverNote,
+  deleteDocument,
   deleteHandoverNote,
   declineChangeRequest,
   settleCareCredit,
+  uploadDocument,
   withdrawChangeRequest,
 } from "@/app/actions";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
@@ -23,6 +25,7 @@ type ChangeRequestWithDetails = ChangeRequest & {
 };
 type ExpenseWithUser = Expense & { paidBy: User };
 type HandoverNoteWithAuthor = HandoverNote & { author: User };
+type DocumentWithUploader = Document & { uploadedBy: User };
 type SpecialEventWithUsers = SpecialEvent & {
   organizer: User;
   invitee: User;
@@ -37,6 +40,8 @@ type DayDetailPanelProps = {
   expenses: ExpenseWithUser[];
   handoverNotes: HandoverNoteWithAuthor[];
   specialEvents: SpecialEventWithUsers[];
+  documents: DocumentWithUploader[];
+  documentUploadEnabled: boolean;
   currentUserId: string;
   baseQuery: string;
   returnTo: string;
@@ -130,6 +135,8 @@ export function DayDetailPanel({
   expenses,
   handoverNotes,
   specialEvents,
+  documents,
+  documentUploadEnabled,
   currentUserId,
   baseQuery,
   returnTo,
@@ -161,6 +168,7 @@ export function DayDetailPanel({
   const expensesForDay = expenses.filter((expense) => isSameDay(expense.incurredOn, day));
   const notesForDay = handoverNotes.filter((note) => isSameDay(note.noteDate, day));
   const eventsForDay = specialEvents.filter((event) => overlapsDay(event.startsAt, event.endsAt, day));
+  const documentsForDay = documents.filter((document) => isSameDay(document.documentDate, day));
   const openExpenseTotal = expensesForDay
     .filter((expense) => expense.status === "OPEN")
     .reduce((sum, expense) => sum + expense.amountCents, 0);
@@ -212,8 +220,8 @@ export function DayDetailPanel({
               notes
             </div>
             <div className="rounded-md bg-white px-2 py-2 text-slate-600">
-              <div className="font-semibold text-slate-950">{eventsForDay.length}</div>
-              events
+              <div className="font-semibold text-slate-950">{documentsForDay.length}</div>
+              docs
             </div>
           </div>
         </div>
@@ -309,6 +317,84 @@ export function DayDetailPanel({
             {eventsForDay.length === 0 ? (
               <div className="rounded-md border border-dashed border-slate-200 px-3 py-3 text-sm text-slate-400">
                 No special events.
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        <div id="documents">
+          <h3 className="text-xs font-semibold uppercase text-slate-500">Documents</h3>
+          {documentUploadEnabled ? (
+            <form action={uploadDocument} className="mt-2 space-y-2">
+              <input type="hidden" name="documentDate" value={dayParam} />
+              <input type="hidden" name="returnTo" value={`${returnTo}#documents`} />
+              <input
+                name="title"
+                placeholder="Document title"
+                className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-950 outline-none focus:border-slate-500"
+                required
+              />
+              <input
+                name="file"
+                type="file"
+                accept="application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif"
+                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-700"
+                required
+              />
+              <textarea
+                name="notes"
+                rows={2}
+                placeholder="Optional notes"
+                className="w-full resize-none rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-950 outline-none focus:border-slate-500"
+              />
+              <button className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-medium text-white hover:bg-slate-800">
+                <Upload className="h-4 w-4" />
+                Upload document
+              </button>
+              <div className="text-xs text-slate-500">PDF or image, up to 10 MB.</div>
+            </form>
+          ) : (
+            <div className="mt-2 rounded-md border border-dashed border-slate-200 px-3 py-3 text-sm text-slate-400">
+              File upload is not configured yet.
+            </div>
+          )}
+          <div className="mt-3 space-y-2">
+            {documentsForDay.map((document) => (
+              <div key={document.id} className="rounded-md border border-slate-200 px-3 py-2 text-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <a
+                    href={`/api/documents/${document.id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="min-w-0 font-medium text-slate-950 hover:text-slate-700"
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <FileText className="h-4 w-4 shrink-0" />
+                      <span className="truncate">{document.title}</span>
+                    </span>
+                  </a>
+                  {document.uploadedById === currentUserId ? (
+                    <form action={deleteDocument.bind(null, document.id)}>
+                      <input type="hidden" name="returnTo" value={`${returnTo}#documents`} />
+                      <ConfirmSubmitButton
+                        className="inline-flex h-7 items-center justify-center rounded-md border border-red-200 px-2 text-xs font-medium text-red-700 hover:bg-red-50"
+                        confirmMessage="Delete this document?"
+                      >
+                        Delete
+                      </ConfirmSubmitButton>
+                    </form>
+                  ) : null}
+                </div>
+                <div className="mt-1 text-xs text-slate-500">
+                  {document.fileName} - {(document.sizeBytes / 1024 / 1024).toFixed(2)} MB - uploaded by{" "}
+                  {document.uploadedBy.name}
+                </div>
+                {document.notes ? <div className="mt-1 text-slate-700">{document.notes}</div> : null}
+              </div>
+            ))}
+            {documentsForDay.length === 0 ? (
+              <div className="rounded-md border border-dashed border-slate-200 px-3 py-3 text-sm text-slate-400">
+                No documents.
               </div>
             ) : null}
           </div>

@@ -64,7 +64,7 @@ export default async function Home({
   const gridEnd = endOfWeek(calendarEnd, { weekStartsOn: 1 });
 
   const data = await loadCalendarData(gridStart, gridEnd);
-  const { family, children, careBlocks, members, requests, credits, expenses, handoverNotes, specialEvents, databaseAvailable } =
+  const { family, children, careBlocks, members, requests, credits, expenses, handoverNotes, specialEvents, documents, databaseAvailable } =
     data;
 
   const parentLabels = members.reduce(
@@ -115,6 +115,7 @@ export default async function Home({
       ? params.expenseStatus
       : "open";
   const openPanel = params?.open;
+  const documentUploadEnabled = Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
   const openCreditCount = credits.filter((credit) => credit.status === "OPEN").length;
   const pendingRequestCount = requests.filter((request) => request.status === "PENDING").length;
   const pendingEventCount = specialEvents.filter((event) => event.status === "PENDING").length;
@@ -285,6 +286,30 @@ export default async function Home({
           </div>
         ) : null}
 
+        {params?.error === "invalid-document" ? (
+          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+            Choose a file and enter a document title before uploading.
+          </div>
+        ) : null}
+
+        {params?.error === "document-too-large" ? (
+          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+            That file is too large. Upload a PDF or image up to 10 MB.
+          </div>
+        ) : null}
+
+        {params?.error === "document-type-not-supported" ? (
+          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+            That file type is not supported. Upload a PDF, JPG, PNG, WebP, HEIC, or HEIF file.
+          </div>
+        ) : null}
+
+        {params?.error === "file-upload-not-configured" ? (
+          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+            File upload is not configured yet. Connect a private Vercel Blob store to enable documents.
+          </div>
+        ) : null}
+
         {!hasSchoolHolidayData ? (
           <div className="rounded-md border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-950">
             VIC school holiday dates are not configured for {selectedYear} yet. Default care,
@@ -317,6 +342,8 @@ export default async function Home({
                 expenses={expenses}
                 handoverNotes={handoverNotes}
                 specialEvents={specialEvents}
+                documents={documents}
+                documentUploadEnabled={documentUploadEnabled}
                 currentUserId={currentMember.userId}
                 baseQuery={baseQuery}
                 returnTo={returnTo}
@@ -428,7 +455,7 @@ async function loadCalendarData(gridStart: Date, gridEnd: Date) {
   try {
     await prisma.$queryRaw`SELECT 1`;
 
-    const [family, children, careBlocks, members, requests, credits, expenses, handoverNotes, specialEvents] = await Promise.all([
+    const [family, children, careBlocks, members, requests, credits, expenses, handoverNotes, specialEvents, documents] = await Promise.all([
       prisma.family.findUnique({ where: { id: DEMO_FAMILY_ID } }),
       prisma.child.findMany({ where: { familyId: DEMO_FAMILY_ID }, orderBy: { name: "asc" } }),
       prisma.careBlock.findMany({
@@ -482,6 +509,14 @@ async function loadCalendarData(gridStart: Date, gridEnd: Date) {
         orderBy: [{ status: "asc" }, { startsAt: "asc" }],
         include: { organizer: true, invitee: true, respondedBy: true },
       }),
+      prisma.document.findMany({
+        where: {
+          familyId: DEMO_FAMILY_ID,
+          documentDate: { gte: gridStart, lt: addDays(gridEnd, 1) },
+        },
+        orderBy: { createdAt: "desc" },
+        include: { uploadedBy: true },
+      }),
     ]);
 
     return {
@@ -494,6 +529,7 @@ async function loadCalendarData(gridStart: Date, gridEnd: Date) {
       expenses,
       handoverNotes,
       specialEvents,
+      documents,
       databaseAvailable: true,
     };
   } catch {
@@ -568,6 +604,7 @@ async function loadCalendarData(gridStart: Date, gridEnd: Date) {
       expenses: [],
       handoverNotes: [],
       specialEvents: [],
+      documents: [],
       databaseAvailable: false,
     };
   }
