@@ -159,6 +159,19 @@ export function DayDetailPanel({
               className="w-full resize-none rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-950 outline-none focus:border-slate-500"
               required
             />
+            <label className="flex items-start gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+              <input
+                type="checkbox"
+                name="notifyOtherParent"
+                className="mt-1 h-4 w-4 rounded border-slate-300"
+              />
+              <span>
+                Notify the other parent by email.
+                <span className="block text-xs text-slate-500">
+                  Email is only a prompt; replies should stay in CoCare.
+                </span>
+              </span>
+            </label>
             <button className="inline-flex h-9 items-center justify-center rounded-md bg-slate-950 px-3 text-sm font-medium text-white hover:bg-slate-800">
               Add note
             </button>
@@ -169,7 +182,7 @@ export function DayDetailPanel({
                 <div className="whitespace-pre-wrap text-slate-900">{note.text}</div>
                 <div className="mt-2 flex items-center justify-between gap-3 text-xs text-amber-900">
                   <span>
-                    {note.author.name} · {format(note.createdAt, "d MMM h:mm a")}
+                    {note.author.name} - {format(note.createdAt, "d MMM h:mm a")}
                   </span>
                   <form action={deleteHandoverNote.bind(null, note.id)}>
                     <input type="hidden" name="returnTo" value={`${returnTo}#handover-notes`} />

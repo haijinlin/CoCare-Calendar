@@ -144,6 +144,13 @@ function changeRequestCalendarPath(
   return `/?view=month&month=${month}&day=${day}&date=${day}&requests=day&requestStatus=${status}&open=changeRequests&focusRequest=${request.id}#request-${request.id}`;
 }
 
+function dayDetailsCalendarPath(date: Date) {
+  const day = localDateKey(date);
+  const month = localMonthKey(date);
+
+  return `/?view=month&month=${month}&day=${day}&date=${day}#handover-notes`;
+}
+
 function localDateTimeLabel(date: Date) {
   return date.toLocaleString("en-AU", {
     timeZone: "Australia/Melbourne",
@@ -795,6 +802,7 @@ export async function createHandoverNote(formData: FormData) {
   const currentMember = await requireCurrentFamilyMember();
   const noteDate = new Date(`${getString(formData, "noteDate")}T00:00:00`);
   const text = getString(formData, "text").trim();
+  const shouldNotify = getString(formData, "notifyOtherParent") === "on";
 
   if (!text || Number.isNaN(noteDate.getTime())) {
     redirect(withError(redirectTarget(formData), "invalid-note"));
@@ -816,6 +824,23 @@ export async function createHandoverNote(formData: FormData) {
     entityId: note.id,
     summary: `Added handover note for ${localDateKey(note.noteDate)}.`,
   });
+
+  if (shouldNotify) {
+    const recipientRole = otherParentRole(currentMember.role);
+    await sendNotificationEmail({
+      to: notificationEmailForRole(recipientRole) ?? "",
+      subject: `New handover note for ${localDateKey(note.noteDate)}`,
+      text: [
+        `${currentMember.user.name} added a handover note for ${localDateKey(note.noteDate)}.`,
+        "",
+        text,
+        "",
+        `Open the day details: ${calendarUrl(dayDetailsCalendarPath(note.noteDate))}`,
+        "",
+        "Please reply or add follow-up notes in CoCare so the note stays with the calendar.",
+      ].join("\n"),
+    });
+  }
 
   revalidatePath("/");
   redirect(redirectTarget(formData));
