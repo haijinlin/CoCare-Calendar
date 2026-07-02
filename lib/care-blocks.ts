@@ -37,6 +37,19 @@ export const expenseSchema = z.object({
   notes: z.string().trim().max(1000).optional().nullable(),
 });
 
+export const specialEventSchema = z
+  .object({
+    title: z.string().trim().min(1).max(120),
+    startsAt: z.coerce.date(),
+    endsAt: z.coerce.date(),
+    location: z.string().trim().max(240).optional().nullable(),
+    notes: z.string().trim().max(1000).optional().nullable(),
+  })
+  .refine((data) => data.endsAt > data.startsAt, {
+    message: "End date must be after start date.",
+    path: ["endsAt"],
+  });
+
 export const careCreditSchema = z
   .object({
     owedByRole: z.enum(["PARENT_A", "PARENT_B"]),

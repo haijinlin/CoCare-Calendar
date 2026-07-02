@@ -1,4 +1,4 @@
-import { CareBlock, ChangeRequest, Child, HandoverNote } from "@prisma/client";
+import { CareBlock, ChangeRequest, Child, HandoverNote, SpecialEvent } from "@prisma/client";
 import { addDays, format, startOfDay } from "date-fns";
 import clsx from "clsx";
 import { ParentLabels } from "@/lib/parents";
@@ -12,6 +12,7 @@ type CalendarChangeRequest = ChangeRequest & {
 };
 
 type CalendarHandoverNote = HandoverNote;
+type CalendarSpecialEvent = SpecialEvent;
 
 type CalendarDisplay = {
   parentRole: CalendarCareBlock["parentRole"];
@@ -28,6 +29,7 @@ type CareCalendarProps = {
   careBlocks: CalendarCareBlock[];
   changeRequests: CalendarChangeRequest[];
   handoverNotes: CalendarHandoverNote[];
+  specialEvents: CalendarSpecialEvent[];
   view: "month" | "week";
   selectedDay: Date | null;
   baseQuery: string;
@@ -161,6 +163,7 @@ export function CareCalendar({
   careBlocks,
   changeRequests,
   handoverNotes,
+  specialEvents,
   view,
   selectedDay,
   baseQuery,
@@ -189,6 +192,9 @@ export function CareCalendar({
           );
           const notesForDay = handoverNotes.filter((note) =>
             note.noteDate >= dayStart && note.noteDate < nextDayStart,
+          );
+          const eventsForDay = specialEvents.filter(
+            (event) => event.startsAt < nextDayStart && event.endsAt > dayStart,
           );
           const requestsForDay = changeRequests.filter(
             (request) =>
@@ -283,6 +289,17 @@ export function CareCalendar({
                     >
                       <span className="truncate">
                         Note{notesForDay.length > 1 ? ` ${notesForDay.length}` : ""}
+                      </span>
+                    </a>
+                  ) : null}
+                  {eventsForDay.length > 0 ? (
+                    <a
+                      href={`/?${baseQuery}&day=${dayKey}&date=${dayKey}&open=specialEvents#special-events`}
+                      title={`${eventsForDay.length} special event${eventsForDay.length === 1 ? "" : "s"}`}
+                      className="relative z-10 inline-flex h-6 max-w-full items-center rounded-full bg-violet-100 px-2 text-[10px] font-semibold text-violet-900 shadow-sm ring-1 ring-violet-200 sm:text-[11px]"
+                    >
+                      <span className="truncate">
+                        Event{eventsForDay.length > 1 ? ` ${eventsForDay.length}` : ""}
                       </span>
                     </a>
                   ) : null}

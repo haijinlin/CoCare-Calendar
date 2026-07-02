@@ -25,6 +25,13 @@ enum ExpenseStatus {
   SETTLED
 }
 
+enum SpecialEventStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+}
+
 model User {
   id                    String          @id @default(cuid())
   email                 String          @unique
@@ -34,6 +41,9 @@ model User {
   respondedChanges      ChangeRequest[] @relation("RespondedBy")
   expensesPaid          Expense[]       @relation("ExpensePaidBy")
   handoverNotes         HandoverNote[]   @relation("HandoverNoteAuthor")
+  specialEventsOrganized SpecialEvent[]  @relation("SpecialEventOrganizer")
+  specialEventsInvited   SpecialEvent[]  @relation("SpecialEventInvitee")
+  specialEventsResponded SpecialEvent[]  @relation("SpecialEventRespondedBy")
   auditLogs             AuditLog[]
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
@@ -49,6 +59,7 @@ model Family {
   careCredits    CareCredit[]
   expenses       Expense[]
   handoverNotes  HandoverNote[]
+  specialEvents  SpecialEvent[]
   schoolHolidays SchoolHolidayPeriod[]
   publicHolidays PublicHolidayRule[]
   auditLogs      AuditLog[]
@@ -171,6 +182,32 @@ model HandoverNote {
 
   @@index([familyId, noteDate])
   @@index([authorUserId, createdAt])
+}
+
+model SpecialEvent {
+  id              String             @id @default(cuid())
+  familyId        String
+  organizerUserId String
+  inviteeUserId   String
+  respondedById   String?
+  status          SpecialEventStatus @default(PENDING)
+  title           String
+  startsAt        DateTime
+  endsAt          DateTime
+  location        String?
+  notes           String?
+  responseNote    String?
+  family          Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  organizer       User               @relation("SpecialEventOrganizer", fields: [organizerUserId], references: [id], onDelete: Cascade)
+  invitee         User               @relation("SpecialEventInvitee", fields: [inviteeUserId], references: [id], onDelete: Cascade)
+  respondedBy     User?              @relation("SpecialEventRespondedBy", fields: [respondedById], references: [id], onDelete: SetNull)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([familyId, status])
+  @@index([familyId, startsAt, endsAt])
+  @@index([organizerUserId, createdAt])
+  @@index([inviteeUserId, createdAt])
 }
 
 model SchoolHolidayPeriod {

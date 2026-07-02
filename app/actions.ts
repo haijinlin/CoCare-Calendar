@@ -9,6 +9,7 @@ import {
   expenseSchema,
   publicHolidayRuleSchema,
   schoolHolidayPeriodSchema,
+  specialEventSchema,
 } from "@/lib/care-blocks";
 import { DEMO_FAMILY_ID } from "@/lib/demo";
 import { requireCurrentFamilyMember } from "@/lib/auth";
@@ -149,6 +150,13 @@ function dayDetailsCalendarPath(date: Date) {
   const month = localMonthKey(date);
 
   return `/?view=month&month=${month}&day=${day}&date=${day}#handover-notes`;
+}
+
+function specialEventCalendarPath(event: { id: string; startsAt: Date }) {
+  const day = localDateKey(event.startsAt);
+  const month = localMonthKey(event.startsAt);
+
+  return `/?view=month&month=${month}&day=${day}&date=${day}&open=specialEvents&focusEvent=${event.id}#event-${event.id}`;
 }
 
 function localDateTimeLabel(date: Date) {
@@ -936,6 +944,213 @@ export async function cancelCareCredit(id: string, formData?: FormData) {
     entityType: "CareCredit",
     entityId: credit.id,
     summary: `Cancelled make-up balance: ${parentRoleLabel(credit.owedByRole)} owed ${parentRoleLabel(credit.owedToRole)} ${minutesLabel(credit.minutes)}.`,
+  });
+
+  revalidatePath("/");
+  redirect(redirectTarget(formData));
+}
+
+export async function createSpecialEvent(formData: FormData) {
+  const currentMember = await requireCurrentFamilyMember();
+  const parsed = specialEventSchema.parse({
+    title: getString(formData, "title"),
+    startsAt: getString(formData, "startsAt"),
+    endsAt: getString(formData, "endsAt"),
+    location: getString(formData, "location") || null,
+    notes: getString(formData, "notes") || null,
+  });
+  const inviteeRole = otherParentRole(currentMember.role);
+  const invitee = await prisma.familyMember.findFirstOrThrow({
+    where: { familyId: DEMO_FAMILY_ID, role: inviteeRole },
+    include: { user: true },
+  });
+
+  const event = await prisma.specialEvent.create({
+    data: {
+      familyId: DEMO_FAMILY_ID,
+      organizerUserId: currentMember.userId,
+      inviteeUserId: invitee.userId,
+      title: parsed.title,
+      startsAt: parsed.startsAt,
+      endsAt: parsed.endsAt,
+      location: parsed.location,
+      notes: parsed.notes,
+    },
+  });
+
+  await recordAuditLog({
+    actorUserId: currentMember.userId,
+    action: "CREATE",
+    entityType: "SpecialEvent",
+    entityId: event.id,
+    summary: `Created special event invitation "${event.title}" for ${localDateKey(event.startsAt)}.`,
+  });
+
+  await sendNotificationEmail({
+    to: invitee.user.email,
+    subject: `Special event invitation: ${event.title}`,
+    text: [
+      `${currentMember.user.name} invited you to a special event with Derick.`,
+      "",
+      `Event: ${event.title}`,
+      `From: ${localDateTimeLabel(event.startsAt)}`,
+      `Until: ${localDateTimeLabel(event.endsAt)}`,
+      event.location ? `Location: ${event.location}` : null,
+      event.notes ? `Notes: ${event.notes}` : null,
+      "",
+      `Open the invitation: ${calendarUrl(specialEventCalendarPath(event))}`,
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  });
+
+  revalidatePath("/");
+  redirect(redirectTarget(formData));
+}
+
+export async function acceptSpecialEvent(id: string, formData: FormData) {
+  const currentMember = await requireCurrentFamilyMember();
+  const event = await prisma.specialEvent.findFirst({
+    where: { id, familyId: DEMO_FAMILY_ID, status: "PENDING", inviteeUserId: currentMember.userId },
+    include: { organizer: true },
+  });
+
+  if (!event) {
+    redirect(withError(redirectTarget(formData), "action-not-allowed"));
+  }
+
+  const updatedEvent = await prisma.specialEvent.update({
+    where: { id: event.id },
+    data: { status: "ACCEPTED", respondedById: currentMember.userId },
+  });
+
+  await recordAuditLog({
+    actorUserId: currentMember.userId,
+    action: "ACCEPT",
+    entityType: "SpecialEvent",
+    entityId: event.id,
+    summary: `Accepted special event invitation "${event.title}".`,
+  });
+
+  await sendNotificationEmail({
+    to: event.organizer.email,
+    subject: `Special event accepted: ${event.title}`,
+    text: [
+      `${currentMember.user.name} accepted your special event invitation.`,
+      "",
+      `Event: ${event.title}`,
+      `From: ${localDateTimeLabel(event.startsAt)}`,
+      `Until: ${localDateTimeLabel(event.endsAt)}`,
+      event.location ? `Location: ${event.location}` : null,
+      "",
+      `Open the event: ${calendarUrl(specialEventCalendarPath(updatedEvent))}`,
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  });
+
+  revalidatePath("/");
+  redirect(redirectTarget(formData));
+}
+
+export async function declineSpecialEvent(id: string, formData: FormData) {
+  const currentMember = await requireCurrentFamilyMember();
+  const event = await prisma.specialEvent.findFirst({
+    where: { id, familyId: DEMO_FAMILY_ID, status: "PENDING", inviteeUserId: currentMember.userId },
+    include: { organizer: true },
+  });
+
+  if (!event) {
+    redirect(withError(redirectTarget(formData), "action-not-allowed"));
+  }
+
+  const updatedEvent = await prisma.specialEvent.update({
+    where: { id: event.id },
+    data: {
+      status: "DECLINED",
+      respondedById: currentMember.userId,
+      responseNote: getString(formData, "responseNote") || null,
+    },
+  });
+
+  await recordAuditLog({
+    actorUserId: currentMember.userId,
+    action: "DECLINE",
+    entityType: "SpecialEvent",
+    entityId: event.id,
+    summary: `Declined special event invitation "${event.title}".`,
+  });
+
+  await sendNotificationEmail({
+    to: event.organizer.email,
+    subject: `Special event declined: ${event.title}`,
+    text: [
+      `${currentMember.user.name} declined your special event invitation.`,
+      "",
+      `Event: ${event.title}`,
+      `From: ${localDateTimeLabel(event.startsAt)}`,
+      `Until: ${localDateTimeLabel(event.endsAt)}`,
+      updatedEvent.responseNote ? `Note: ${updatedEvent.responseNote}` : null,
+      "",
+      `Open the event: ${calendarUrl(specialEventCalendarPath(updatedEvent))}`,
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  });
+
+  revalidatePath("/");
+  redirect(redirectTarget(formData));
+}
+
+export async function cancelSpecialEvent(id: string, formData: FormData) {
+  const currentMember = await requireCurrentFamilyMember();
+  const event = await prisma.specialEvent.findFirst({
+    where: {
+      id,
+      familyId: DEMO_FAMILY_ID,
+      status: { in: ["PENDING", "ACCEPTED"] },
+      OR: [{ organizerUserId: currentMember.userId }, { inviteeUserId: currentMember.userId }],
+    },
+    include: { organizer: true, invitee: true },
+  });
+
+  if (!event) {
+    redirect(withError(redirectTarget(formData), "action-not-allowed"));
+  }
+
+  const updatedEvent = await prisma.specialEvent.update({
+    where: { id: event.id },
+    data: {
+      status: "CANCELLED",
+      respondedById: currentMember.userId,
+      responseNote: getString(formData, "responseNote") || "Cancelled.",
+    },
+  });
+  const recipient = event.organizerUserId === currentMember.userId ? event.invitee : event.organizer;
+
+  await recordAuditLog({
+    actorUserId: currentMember.userId,
+    action: "CANCEL",
+    entityType: "SpecialEvent",
+    entityId: event.id,
+    summary: `Cancelled special event "${event.title}".`,
+  });
+
+  await sendNotificationEmail({
+    to: recipient.email,
+    subject: `Special event cancelled: ${event.title}`,
+    text: [
+      `${currentMember.user.name} cancelled a special event.`,
+      "",
+      `Event: ${event.title}`,
+      `From: ${localDateTimeLabel(event.startsAt)}`,
+      `Until: ${localDateTimeLabel(event.endsAt)}`,
+      updatedEvent.responseNote ? `Note: ${updatedEvent.responseNote}` : null,
+      "",
+      `Open the event: ${calendarUrl(specialEventCalendarPath(updatedEvent))}`,
+    ]
+      .filter(Boolean)
+      .join("\n"),
   });
 
   revalidatePath("/");

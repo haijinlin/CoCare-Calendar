@@ -23,6 +23,7 @@ import { DayDetailPanel } from "@/components/day-detail-panel";
 import { ExpensePanel } from "@/components/expense-panel";
 import { LogoutButton } from "@/components/logout-button";
 import { PersonBadge } from "@/components/person-badge";
+import { SpecialEventPanel } from "@/components/special-event-panel";
 import { generateCourtOrderCareBlocks2026, hasVicSchoolHolidayData } from "@/lib/court-order-schedule";
 import { requireCurrentFamilyMember } from "@/lib/auth";
 import { DEMO_FAMILY_ID } from "@/lib/demo";
@@ -45,6 +46,7 @@ export default async function Home({
     expenseStatus?: string;
     open?: string;
     focusRequest?: string;
+    focusEvent?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -62,7 +64,7 @@ export default async function Home({
   const gridEnd = endOfWeek(calendarEnd, { weekStartsOn: 1 });
 
   const data = await loadCalendarData(gridStart, gridEnd);
-  const { family, children, careBlocks, members, requests, credits, expenses, handoverNotes, databaseAvailable } =
+  const { family, children, careBlocks, members, requests, credits, expenses, handoverNotes, specialEvents, databaseAvailable } =
     data;
 
   const parentLabels = members.reduce(
@@ -115,6 +117,7 @@ export default async function Home({
   const openPanel = params?.open;
   const openCreditCount = credits.filter((credit) => credit.status === "OPEN").length;
   const pendingRequestCount = requests.filter((request) => request.status === "PENDING").length;
+  const pendingEventCount = specialEvents.filter((event) => event.status === "PENDING").length;
   const openExpenseCents = expenses
     .filter((expense) => expense.status === "OPEN")
     .reduce((sum, expense) => sum + expense.amountCents, 0);
@@ -297,6 +300,7 @@ export default async function Home({
             careBlocks={careBlocks}
             changeRequests={requests}
             handoverNotes={handoverNotes}
+            specialEvents={specialEvents}
             view={view}
             selectedDay={selectedDay}
             baseQuery={baseQuery}
@@ -312,6 +316,7 @@ export default async function Home({
                 credits={credits}
                 expenses={expenses}
                 handoverNotes={handoverNotes}
+                specialEvents={specialEvents}
                 currentUserId={currentMember.userId}
                 baseQuery={baseQuery}
                 returnTo={returnTo}
@@ -347,6 +352,21 @@ export default async function Home({
                 baseQuery={baseQuery}
                 returnTo={`${returnTo}#change-requests`}
                 parentLabels={parentLabels}
+              />
+            </CollapsiblePanel>
+            <CollapsiblePanel
+              id="special-events"
+              title="Special events"
+              summary={pendingEventCount === 1 ? "1 pending" : `${pendingEventCount} pending`}
+              defaultOpen={openPanel === "specialEvents" || pendingEventCount > 0}
+            >
+              <SpecialEventPanel
+                events={specialEvents}
+                currentUserId={currentMember.userId}
+                defaultDate={formDefaultDate}
+                monthStart={monthStart}
+                focusEventId={params?.focusEvent ?? null}
+                returnTo={returnTo}
               />
             </CollapsiblePanel>
             <CollapsiblePanel
@@ -408,7 +428,7 @@ async function loadCalendarData(gridStart: Date, gridEnd: Date) {
   try {
     await prisma.$queryRaw`SELECT 1`;
 
-    const [family, children, careBlocks, members, requests, credits, expenses, handoverNotes] = await Promise.all([
+    const [family, children, careBlocks, members, requests, credits, expenses, handoverNotes, specialEvents] = await Promise.all([
       prisma.family.findUnique({ where: { id: DEMO_FAMILY_ID } }),
       prisma.child.findMany({ where: { familyId: DEMO_FAMILY_ID }, orderBy: { name: "asc" } }),
       prisma.careBlock.findMany({
@@ -453,6 +473,15 @@ async function loadCalendarData(gridStart: Date, gridEnd: Date) {
         orderBy: { createdAt: "desc" },
         include: { author: true },
       }),
+      prisma.specialEvent.findMany({
+        where: {
+          familyId: DEMO_FAMILY_ID,
+          startsAt: { lt: addDays(gridEnd, 1) },
+          endsAt: { gt: gridStart },
+        },
+        orderBy: [{ status: "asc" }, { startsAt: "asc" }],
+        include: { organizer: true, invitee: true, respondedBy: true },
+      }),
     ]);
 
     return {
@@ -464,6 +493,7 @@ async function loadCalendarData(gridStart: Date, gridEnd: Date) {
       credits,
       expenses,
       handoverNotes,
+      specialEvents,
       databaseAvailable: true,
     };
   } catch {
@@ -537,6 +567,7 @@ async function loadCalendarData(gridStart: Date, gridEnd: Date) {
       credits: [],
       expenses: [],
       handoverNotes: [],
+      specialEvents: [],
       databaseAvailable: false,
     };
   }
