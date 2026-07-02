@@ -218,43 +218,6 @@ export function DayDetailPanel({
           </div>
         </div>
 
-        <div>
-          <div className="flex items-center justify-between gap-3">
-            <h3 className="text-xs font-semibold uppercase text-slate-500">Special events</h3>
-            <a
-              href={`/?${baseQuery}&day=${dayParam}&date=${dayParam}&open=specialEvents#special-events`}
-              className="text-xs font-medium text-slate-500 hover:text-slate-900"
-            >
-              Manage
-            </a>
-          </div>
-          <div className="mt-2 space-y-2">
-            {eventsForDay.map((event) => (
-              <a
-                key={event.id}
-                href={`/?${baseQuery}&day=${dayParam}&date=${dayParam}&open=specialEvents&focusEvent=${event.id}#event-${event.id}`}
-                className="block rounded-md border border-violet-200 bg-violet-50 px-3 py-2 text-sm hover:bg-violet-100"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="font-medium text-violet-950">{event.title}</div>
-                  <span className="rounded-full bg-white px-2 py-1 text-xs font-medium text-violet-700">
-                    {event.status.toLowerCase()}
-                  </span>
-                </div>
-                <div className="mt-1 text-violet-900">
-                  {format(event.startsAt, "h:mm a")} - {format(event.endsAt, "h:mm a")}
-                </div>
-                {event.location ? <div className="mt-1 text-violet-900">{event.location}</div> : null}
-              </a>
-            ))}
-            {eventsForDay.length === 0 ? (
-              <div className="rounded-md border border-dashed border-slate-200 px-3 py-3 text-sm text-slate-400">
-                No special events.
-              </div>
-            ) : null}
-          </div>
-        </div>
-
         <div id="handover-notes">
           <h3 className="text-xs font-semibold uppercase text-slate-500">Handover notes</h3>
           <form action={createHandoverNote} className="mt-2 space-y-2">
@@ -309,6 +272,43 @@ export function DayDetailPanel({
             {notesForDay.length === 0 ? (
               <div className="rounded-md border border-dashed border-slate-200 px-3 py-3 text-sm text-slate-400">
                 No handover notes.
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-xs font-semibold uppercase text-slate-500">Special events</h3>
+            <a
+              href={`/?${baseQuery}&day=${dayParam}&date=${dayParam}&open=specialEvents#special-events`}
+              className="text-xs font-medium text-slate-500 hover:text-slate-900"
+            >
+              Manage
+            </a>
+          </div>
+          <div className="mt-2 space-y-2">
+            {eventsForDay.map((event) => (
+              <a
+                key={event.id}
+                href={`/?${baseQuery}&day=${dayParam}&date=${dayParam}&open=specialEvents&focusEvent=${event.id}#event-${event.id}`}
+                className="block rounded-md border border-violet-200 bg-violet-50 px-3 py-2 text-sm hover:bg-violet-100"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="font-medium text-violet-950">{event.title}</div>
+                  <span className="rounded-full bg-white px-2 py-1 text-xs font-medium text-violet-700">
+                    {event.status.toLowerCase()}
+                  </span>
+                </div>
+                <div className="mt-1 text-violet-900">
+                  {format(event.startsAt, "h:mm a")} - {format(event.endsAt, "h:mm a")}
+                </div>
+                {event.location ? <div className="mt-1 text-violet-900">{event.location}</div> : null}
+              </a>
+            ))}
+            {eventsForDay.length === 0 ? (
+              <div className="rounded-md border border-dashed border-slate-200 px-3 py-3 text-sm text-slate-400">
+                No special events.
               </div>
             ) : null}
           </div>
