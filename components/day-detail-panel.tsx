@@ -19,6 +19,7 @@ type ChangeRequestWithDetails = ChangeRequest & {
   careBlock: CareBlockWithChild;
   requestedBy: User;
   respondedBy: User | null;
+  careCredits?: CareCredit[];
 };
 type ExpenseWithUser = Expense & { paidBy: User };
 type HandoverNoteWithAuthor = HandoverNote & { author: User };
@@ -58,6 +59,33 @@ function formatMinutes(minutes: number) {
   if (hours > 0) parts.push(`${hours}h`);
 
   return parts.length > 0 ? parts.join(" ") : "0h";
+}
+
+function creditSummary(credits: CareCredit[] | undefined, parentLabels: ParentLabels) {
+  const activeCredits = (credits ?? []).filter(
+    (credit) => credit.status === "OPEN" || credit.status === "SETTLED",
+  );
+
+  if (activeCredits.length === 0) return null;
+
+  return activeCredits
+    .map(
+      (credit) =>
+        `${parentLabels[credit.owedByRole]} owes ${parentLabels[credit.owedToRole]} ${formatMinutes(
+          credit.remainingMinutes,
+        )}${credit.status === "SETTLED" ? " (settled)" : ""}`,
+    )
+    .join("; ");
+}
+
+function blockPriority(block: CareBlockWithChild) {
+  const note = block.handoverNote ?? "";
+
+  if (note.includes("pickup") || note.includes("Pickup")) return 5;
+  if (note.includes("birthday")) return 4;
+  if (note.includes("holiday")) return 3;
+  if (note.includes("Return")) return 2;
+  return 1;
 }
 
 function statusClass(status: ChangeRequest["status"]) {
@@ -129,6 +157,20 @@ export function DayDetailPanel({
     .filter((expense) => expense.status === "OPEN")
     .reduce((sum, expense) => sum + expense.amountCents, 0);
   const dayParam = format(day, "yyyy-MM-dd");
+  const acceptedRequestForDay = requestsForDay.find((request) => request.status === "ACCEPTED");
+  const pendingRequestsForDay = requestsForDay.filter((request) => request.status === "PENDING");
+  const headlineBlock = courtBlocks.toSorted((a, b) => blockPriority(b) - blockPriority(a))[0];
+  const headlineCare = acceptedRequestForDay
+    ? `${parentLabels[acceptedRequestForDay.proposedParentRole]} by accepted change`
+    : headlineBlock
+      ? parentLabels[headlineBlock.parentRole]
+      : "No scheduled care";
+  const headlineTime = acceptedRequestForDay
+    ? timeRange(acceptedRequestForDay.proposedStartsAt, acceptedRequestForDay.proposedEndsAt)
+    : headlineBlock
+      ? timeRange(headlineBlock.startsAt, headlineBlock.endsAt)
+      : null;
+  const headlineNote = acceptedRequestForDay?.reason ?? headlineBlock?.handoverNote ?? null;
 
   return (
     <section className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
@@ -147,6 +189,27 @@ export function DayDetailPanel({
       </div>
 
       <div className="mt-4 space-y-4">
+        <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+          <div className="text-xs font-semibold uppercase text-slate-500">Today summary</div>
+          <div className="mt-2 text-sm font-semibold text-slate-950">{headlineCare}</div>
+          {headlineTime ? <div className="mt-1 text-sm text-slate-600">{headlineTime}</div> : null}
+          {headlineNote ? <div className="mt-1 text-sm text-slate-700">{headlineNote}</div> : null}
+          <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+            <div className="rounded-md bg-white px-2 py-2 text-slate-600">
+              <div className="font-semibold text-slate-950">{pendingRequestsForDay.length}</div>
+              pending
+            </div>
+            <div className="rounded-md bg-white px-2 py-2 text-slate-600">
+              <div className="font-semibold text-slate-950">{notesForDay.length}</div>
+              notes
+            </div>
+            <div className="rounded-md bg-white px-2 py-2 text-slate-600">
+              <div className="font-semibold text-slate-950">{creditsForDay.length}</div>
+              make-up
+            </div>
+          </div>
+        </div>
+
         <div id="handover-notes">
           <h3 className="text-xs font-semibold uppercase text-slate-500">Handover notes</h3>
           <form action={createHandoverNote} className="mt-2 space-y-2">
@@ -242,6 +305,11 @@ export function DayDetailPanel({
                   {format(request.proposedEndsAt, "d MMM h:mm a")}
                 </div>
                 {request.reason ? <div className="mt-1 text-slate-700">{request.reason}</div> : null}
+                {creditSummary(request.careCredits, parentLabels) ? (
+                  <div className="mt-2 rounded-md border border-teal-100 bg-teal-50 px-3 py-2 text-xs font-medium text-teal-800">
+                    Make-up: {creditSummary(request.careCredits, parentLabels)}
+                  </div>
+                ) : null}
                 <div className="mt-2 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-500">
                   {requestAuditLines(request).map((line) => (
                     <div key={line}>{line}</div>

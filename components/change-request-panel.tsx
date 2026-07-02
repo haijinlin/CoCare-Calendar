@@ -125,6 +125,23 @@ function formatMinutes(minutes: number) {
   return parts.length > 0 ? parts.join(" ") : "0h";
 }
 
+function creditSummary(credits: CareCredit[] | undefined, parentLabels: ParentLabels) {
+  const activeCredits = (credits ?? []).filter(
+    (credit) => credit.status === "OPEN" || credit.status === "SETTLED",
+  );
+
+  if (activeCredits.length === 0) return null;
+
+  return activeCredits
+    .map(
+      (credit) =>
+        `${parentLabels[credit.owedByRole]} owes ${parentLabels[credit.owedToRole]} ${formatMinutes(
+          credit.remainingMinutes,
+        )}${credit.status === "SETTLED" ? " (settled)" : ""}`,
+    )
+    .join("; ");
+}
+
 function requestAuditLines(request: ChangeRequestWithUsers) {
   const lines = [`Requested by ${request.requestedBy.name} on ${format(request.createdAt, "d MMM yyyy h:mm a")}`];
 
@@ -469,6 +486,7 @@ function RequestCard({
   const canWithdraw = request.status === "PENDING" && isRequester;
   const canEdit = request.status === "PENDING" && isRequester;
   const auditLines = requestAuditLines(request);
+  const makeUpSummary = creditSummary(request.careCredits, parentLabels);
 
   return (
     <div
@@ -502,6 +520,11 @@ function RequestCard({
         {format(request.proposedEndsAt, "d MMM h:mm a")}
       </div>
       {request.reason ? <div className="mt-2 text-slate-700">{request.reason}</div> : null}
+      {makeUpSummary ? (
+        <div className="mt-3 rounded-md border border-teal-100 bg-teal-50 px-3 py-2 text-xs font-medium text-teal-800">
+          Make-up: {makeUpSummary}
+        </div>
+      ) : null}
       <div className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-500">
         {auditLines.map((line) => (
           <div key={line}>{line}</div>
