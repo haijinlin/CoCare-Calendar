@@ -183,10 +183,8 @@ export function DayDetailPanel({
       : "No scheduled care";
   const headlineTime = acceptedRequestForDay
     ? timeRange(acceptedRequestForDay.proposedStartsAt, acceptedRequestForDay.proposedEndsAt)
-    : headlineBlock
-      ? timeRange(headlineBlock.startsAt, headlineBlock.endsAt)
-      : null;
-  const headlineNote = acceptedRequestForDay?.reason ?? headlineBlock?.handoverNote ?? null;
+    : null;
+  const headlineNote = acceptedRequestForDay?.reason ?? null;
 
   return (
     <section className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
@@ -208,6 +206,9 @@ export function DayDetailPanel({
         <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
           <div className="text-xs font-semibold uppercase text-slate-500">Today summary</div>
           <div className="mt-2 text-sm font-semibold text-slate-950">{headlineCare}</div>
+          {!acceptedRequestForDay && headlineBlock ? (
+            <div className="mt-1 text-xs text-slate-500">Default court-order schedule</div>
+          ) : null}
           {headlineTime ? <div className="mt-1 text-sm text-slate-600">{headlineTime}</div> : null}
           {headlineNote ? <div className="mt-1 text-sm text-slate-700">{headlineNote}</div> : null}
           <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
