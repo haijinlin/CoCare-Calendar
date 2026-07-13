@@ -421,7 +421,7 @@ export default async function Home({
               title="Make-up balance"
               summary={
                 pendingManualCreditCount > 0
-                  ? `${openCreditCount} open · ${pendingManualCreditCount} pending`
+                  ? `${openCreditCount} open - ${pendingManualCreditCount} pending`
                   : `${openCreditCount} open`
               }
               defaultOpen={openCreditCount > 0 || pendingManualCreditCount > 0 || openPanel === "careCredits"}
@@ -474,7 +474,7 @@ function CollapsiblePanel({
         <span className="font-semibold text-slate-950">{title}</span>
         <span className="flex items-center gap-2 text-xs text-slate-500">
           {summary}
-          <span className="text-slate-400 transition-transform group-open:rotate-180">⌄</span>
+          <span className="text-slate-400 transition-transform group-open:rotate-180">v</span>
         </span>
       </summary>
       <div className="mt-3">{children}</div>
