@@ -54,6 +54,8 @@ GOOGLE_CLIENT_SECRET=
 
 HAYDEN_GOOGLE_EMAIL=
 CONSTANCE_GOOGLE_EMAIL=
+HAYDEN_NOTIFICATION_EMAIL=
+CONSTANCE_NOTIFICATION_EMAIL=
 FAMILY_NAME=CoCare Family
 
 RESEND_API_KEY=
@@ -72,6 +74,7 @@ Notes:
 - `NEXTAUTH_URL` and `APP_BASE_URL` must match the exact production URL users open.
 - `HAYDEN_GOOGLE_EMAIL` maps to Hayden / `PARENT_A`.
 - `CONSTANCE_GOOGLE_EMAIL` maps to Constance / `PARENT_B`.
+- `HAYDEN_NOTIFICATION_EMAIL` and `CONSTANCE_NOTIFICATION_EMAIL` are optional. Use them when a parent signs in with Google but prefers notifications at another inbox, such as Yahoo. If blank, notifications use the Google email.
 - `EMAIL_FROM` should use a Resend verified sender domain for production.
 - `onboarding@resend.dev` can be used for limited testing, but it is not the final production sender.
 - Document uploads use a private Vercel Blob store. If Blob is not configured, the app still works but upload is disabled.

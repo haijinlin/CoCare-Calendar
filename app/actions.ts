@@ -1099,7 +1099,7 @@ export async function createSpecialEvent(formData: FormData) {
   });
 
   await sendNotificationEmail({
-    to: invitee.user.email,
+    to: notificationEmailForRole(invitee.role) ?? invitee.user.email,
     subject: `Special event invitation: ${event.title}`,
     text: [
       `${currentMember.user.name} invited you to a special event with Derick.`,
@@ -1145,7 +1145,7 @@ export async function acceptSpecialEvent(id: string, formData: FormData) {
   });
 
   await sendNotificationEmail({
-    to: event.organizer.email,
+    to: (await notificationEmailForFamilyUser(event.organizerUserId)) ?? event.organizer.email,
     subject: `Special event accepted: ${event.title}`,
     text: [
       `${currentMember.user.name} accepted your special event invitation.`,
@@ -1194,7 +1194,7 @@ export async function declineSpecialEvent(id: string, formData: FormData) {
   });
 
   await sendNotificationEmail({
-    to: event.organizer.email,
+    to: (await notificationEmailForFamilyUser(event.organizerUserId)) ?? event.organizer.email,
     subject: `Special event declined: ${event.title}`,
     text: [
       `${currentMember.user.name} declined your special event invitation.`,
@@ -1249,7 +1249,7 @@ export async function cancelSpecialEvent(id: string, formData: FormData) {
   });
 
   await sendNotificationEmail({
-    to: recipient.email,
+    to: (await notificationEmailForFamilyUser(recipient.id)) ?? recipient.email,
     subject: `Special event cancelled: ${event.title}`,
     text: [
       `${currentMember.user.name} cancelled a special event.`,

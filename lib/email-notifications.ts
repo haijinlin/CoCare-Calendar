@@ -19,8 +19,14 @@ function fromAddress() {
 }
 
 export function notificationEmailForRole(role: string) {
-  if (role === "PARENT_A") return process.env.HAYDEN_GOOGLE_EMAIL?.trim() || null;
-  if (role === "PARENT_B") return process.env.CONSTANCE_GOOGLE_EMAIL?.trim() || null;
+  if (role === "PARENT_A") {
+    return process.env.HAYDEN_NOTIFICATION_EMAIL?.trim() || process.env.HAYDEN_GOOGLE_EMAIL?.trim() || null;
+  }
+
+  if (role === "PARENT_B") {
+    return process.env.CONSTANCE_NOTIFICATION_EMAIL?.trim() || process.env.CONSTANCE_GOOGLE_EMAIL?.trim() || null;
+  }
+
   return null;
 }
 
