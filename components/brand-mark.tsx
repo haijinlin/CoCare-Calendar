@@ -6,6 +6,7 @@ type BrandMarkProps = {
 };
 
 export function BrandMark({ compact = false, href = "/" }: BrandMarkProps) {
+  const screenshotMode = process.env.VERCEL !== "1" && process.env.SCREENSHOT_MODE === "true";
   const content = (
     <>
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-blue-200 bg-blue-50 text-blue-700 shadow-sm sm:h-10 sm:w-10">
@@ -17,7 +18,7 @@ export function BrandMark({ compact = false, href = "/" }: BrandMarkProps) {
         </div>
         {!compact ? (
           <div className="text-[11px] leading-tight text-slate-500 sm:text-xs">
-            Derick's care calendar
+            {screenshotMode ? "Emma's care calendar" : "Derick's care calendar"}
           </div>
         ) : null}
       </div>

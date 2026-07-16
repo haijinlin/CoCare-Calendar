@@ -53,7 +53,7 @@ function blockScore(block: CalendarCareBlock) {
   if (note.includes("birthday")) return 90;
   if (note.includes("Christmas") || note.includes("Easter")) return 80;
   if (note.includes("pickup from school") || isMorningHaydenPickup(block)) return 70;
-  if (note.includes("Return to Constance")) return 65;
+  if (note.includes("Return to Constance") || note.includes("Return to Jordan")) return 65;
   if (note.includes("public holiday")) return 60;
   if (note.includes("School holiday")) return 50;
   return 10;
@@ -74,6 +74,7 @@ function isMorningHaydenPickup(block: Pick<CalendarCareBlock, "parentRole" | "st
       note.includes("public holiday") ||
       note.includes("Father's Day") ||
       note.includes("Hayden birthday") ||
+      note.includes("Alex birthday") ||
       note.includes("Easter") ||
       note.includes("Christmas"))
   );
@@ -101,7 +102,7 @@ function describeDisplay(display: CalendarDisplay, parentLabels: ParentLabels) {
   if (display.isPickupDay) {
     return `${note.replace(" public holiday", "")} pickup ${format(display.pickupTime ?? new Date(), "h:mm a")} (${name})`;
   }
-  if (note.includes("Return to Constance")) return `${name} until 8 PM`;
+  if (note.includes("Return to Constance") || note.includes("Return to Jordan")) return `${name} until 8 PM`;
   if (note.includes("birthday")) return `${note} (${name})`;
   if (note.includes("Christmas")) return `Christmas (${name})`;
   if (note.includes("Easter")) return `Easter (${name})`;

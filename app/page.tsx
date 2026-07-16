@@ -484,6 +484,9 @@ function CollapsiblePanel({
 
 async function loadCalendarData(gridStart: Date, gridEnd: Date) {
   try {
+    if (process.env.VERCEL !== "1" && process.env.SCREENSHOT_MODE === "true") {
+      throw new Error("Use synthetic screenshot data");
+    }
     await prisma.$queryRaw`SELECT 1`;
 
     const [family, children, careBlocks, members, requests, credits, expenses, handoverNotes, specialEvents, documents] = await Promise.all([
@@ -568,21 +571,21 @@ async function loadCalendarData(gridStart: Date, gridEnd: Date) {
     const child = {
       id: "demo-child",
       familyId: DEMO_FAMILY_ID,
-      name: "Derick",
+      name: "Emma",
       createdAt: now,
       updatedAt: now,
     };
     const parentA = {
       id: "parent-a",
       email: "parent-a@example.com",
-      name: "Hayden Lin",
+      name: "Alex Morgan",
       createdAt: now,
       updatedAt: now,
     };
     const parentB = {
       id: "parent-b",
       email: "parent-b@example.com",
-      name: "Constance Xie",
+      name: "Jordan Lee",
       createdAt: now,
       updatedAt: now,
     };
@@ -607,6 +610,7 @@ async function loadCalendarData(gridStart: Date, gridEnd: Date) {
       },
     ];
 
+    const screenshotMode = process.env.VERCEL !== "1" && process.env.SCREENSHOT_MODE === "true";
     const careBlocks = generateCourtOrderCareBlocks2026()
       .filter((block) => block.startsAt < addDays(gridEnd, 1) && block.endsAt > gridStart)
       .map((block, index) => ({
@@ -618,25 +622,56 @@ async function loadCalendarData(gridStart: Date, gridEnd: Date) {
         child,
         source: "COURT_ORDER",
         ...block,
+        handoverNote: screenshotMode
+          ? block.handoverNote
+              ?.replaceAll("Hayden", "Alex")
+              .replaceAll("Constance", "Jordan")
+              .replaceAll("Derick", "Emma") ?? null
+          : block.handoverNote,
       }));
+
+    const requestBlock = careBlocks.find((block) => block.parentRole !== "BOTH") ?? careBlocks[0];
+    const screenshotRequests = screenshotMode && requestBlock
+      ? [
+          {
+            id: "screenshot-request",
+            familyId: DEMO_FAMILY_ID,
+            careBlockId: requestBlock.id,
+            requestedById: parentA.id,
+            respondedById: null,
+            status: "PENDING" as const,
+            proposedParentRole: requestBlock.parentRole === "PARENT_A" ? "PARENT_B" as const : "PARENT_A" as const,
+            proposedStartsAt: addDays(requestBlock.startsAt, 7),
+            proposedEndsAt: addDays(requestBlock.endsAt, 7),
+            reason: "Family celebration — requesting a weekend swap.",
+            responseNote: null,
+            createdAt: now,
+            updatedAt: now,
+            requestedBy: parentA,
+            respondedBy: null,
+            careCredits: [],
+            careBlock: requestBlock,
+          },
+        ]
+      : [];
 
     return {
       family: {
         id: DEMO_FAMILY_ID,
-        name: process.env.FAMILY_NAME?.trim() || "CoCare Family",
+        name: screenshotMode ? "Morgan-Lee Family" : process.env.FAMILY_NAME?.trim() || "CoCare Family",
         createdAt: now,
         updatedAt: now,
       },
       children: [child],
       careBlocks,
       members,
-      requests: [],
+      requests: screenshotRequests,
       credits: [],
       expenses: [],
       handoverNotes: [],
       specialEvents: [],
       documents: [],
-      databaseAvailable: false,
+      databaseAvailable: screenshotMode,
     };
   }
 }

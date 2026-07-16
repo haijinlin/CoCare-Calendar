@@ -13,7 +13,7 @@ import {
   specialEventSchema,
 } from "@/lib/care-blocks";
 import { DEMO_FAMILY_ID } from "@/lib/demo";
-import { requireCurrentFamilyMember } from "@/lib/auth";
+import { requireCurrentFamilyMember as requireAuthenticatedFamilyMember } from "@/lib/auth";
 import {
   calendarUrl,
   notificationEmailForRole,
@@ -26,6 +26,14 @@ import {
   assignPublicHolidayRotation,
   generateStandardVicPublicHolidays,
 } from "@/lib/vic-public-holidays";
+
+async function requireCurrentFamilyMember() {
+  if (process.env.VERCEL !== "1" && process.env.SCREENSHOT_MODE === "true") {
+    throw new Error("Screenshot mode is read-only.");
+  }
+
+  return requireAuthenticatedFamilyMember();
+}
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);

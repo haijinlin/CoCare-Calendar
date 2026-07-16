@@ -19,6 +19,27 @@ function roleForGoogleEmail(email: string) {
 }
 
 export async function getCurrentFamilyMember() {
+  if (process.env.VERCEL !== "1" && process.env.SCREENSHOT_MODE === "true") {
+    const now = new Date();
+    const user = {
+      id: "screenshot-parent-a",
+      email: "alex@example.com",
+      name: "Alex Morgan",
+      createdAt: now,
+      updatedAt: now,
+    };
+    return {
+      id: "screenshot-member-a",
+      familyId: DEMO_FAMILY_ID,
+      userId: user.id,
+      role: "PARENT_A" as const,
+      createdAt: now,
+      updatedAt: now,
+      user,
+      googleEmail: user.email,
+    };
+  }
+
   const session = await getServerSession(authOptions);
   const email = normalized(session?.user?.email);
   const role = roleForGoogleEmail(email);
